@@ -15,7 +15,7 @@ def main():
         cv.imshow('frame',frame)
         key = cv.waitKey(0)
         if key == 13: # Enter
-            cv.imwrite('/home/laars/uni/BA/git_pythonsample/python/results/wflicker/%s.png' % (x), frame)
+            cv.imwrite('/home/laars/uni/BA/code/python/results/wflicker/%s.png' % (x), frame)
         if key == 27: # Escape
             break
 if __name__=='__main__':

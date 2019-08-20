@@ -194,7 +194,7 @@ class App:
                     _ret, none_frame = self.cam.read()
                     if not _ret:
                         continue
-                    # cv.imwrite('/home/laars/uni/BA/git_pythonsample/python/results/none_frame/%s.png' % (idx), none_frame)
+                    # cv.imwrite('/home/laars/uni/BA/code/python/results/none_frame/%s.png' % (idx), none_frame)
 
 
                 cv.imshow('image', heatmapshow)

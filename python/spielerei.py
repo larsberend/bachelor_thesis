@@ -3,7 +3,7 @@ import cv2 as cv
 import matplotlib.pyplot as plt
 
 cv.buildOpticalFlowPyramid()
-im = cv.imread('/home/laars/uni/BA/git_pythonsample/python/results/none_frame/0.png',0)
+im = cv.imread('/home/laars/uni/BA/code/python/results/none_frame/0.png',0)
 
 kernel = cv.getGaborKernel((15,15), sigma = 1, theta = 1, lambd = 1, gamma = 1)
 
