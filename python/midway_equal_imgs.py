@@ -12,14 +12,10 @@ nr_frames = 2
 path = '/home/laars/uni/BA/code/python/results/wflicker/'#'/home/laars/uni/BA/eyes/000/eye1.mp4'
 
 
-def midway_equal_imgs(   path = path,
+def midway_equal_imgs(   imgs,
                     nr_frames = nr_frames,
                     save_path='/home/laars/uni/BA/code/python/results/deflicker/'
                 ):
-    imgs = []
-    for z in range(nr_frames):
-        path_file = path + 'flicker%s.png' % (z)
-        imgs.append(cv.imread(path_file, 0))
     width = imgs[0].shape[1]
     height = imgs[0].shape[0]
     sum_sort = np.zeros((width * height),dtype=np.uint16)
@@ -28,8 +24,8 @@ def midway_equal_imgs(   path = path,
 
     for x in range(nr_frames):
 
-        cv.imshow('frame', imgs[x])
-        cv.waitKey(0)
+        # cv.imshow('frame', imgs[x])
+        # cv.waitKey(0)
 
         # print(np.unique(frame, return_counts=True))
         # frames.append(frame)
@@ -56,8 +52,8 @@ def midway_equal_imgs(   path = path,
         # plt.show()
 
 
-        cv.imshow('frame_def', frames_def[y])
-        cv.waitKey(0)
+        # cv.imshow('frame_def', frames_def[y])
+        # cv.waitKey(0)
         if save_path is not None:
             cv.imwrite('%s%s.png' % (save_path, y),
                         frames_def[y]
@@ -66,4 +62,9 @@ def midway_equal_imgs(   path = path,
     return frames_def
 
 if __name__== '__main__':
-    midway_equal_imgs()
+    imgs = []
+    for z in range(nr_frames):
+        path_file = path + 'flicker%s.png' % (z)
+        imgs.append(cv.imread(path_file, 0))
+    x = midway_equal_imgs(imgs)
+    print(x)
