@@ -46,6 +46,7 @@ from time import clock
 from tst_scene_render import TestSceneRender
 import common
 
+
 class VideoSynthBase(object):
     def __init__(self, size=None, noise=0.0, bg = None, **params):
         self.bg = None
@@ -83,6 +84,7 @@ class VideoSynthBase(object):
 
     def isOpened(self):
         return True
+
 
 class Book(VideoSynthBase):
     def __init__(self, **kw):

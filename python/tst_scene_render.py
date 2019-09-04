@@ -12,6 +12,7 @@ from numpy import pi, sin, cos
 
 defaultSize = 512
 
+
 class TestSceneRender():
 
     def __init__(self, bgImg = None, fgImg = None,
