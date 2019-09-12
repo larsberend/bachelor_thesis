@@ -25,12 +25,9 @@ from __future__ import print_function
 import numpy as np
 import cv2 as cv
 import matplotlib.pyplot as plt
+from math import atan,atan2,degrees
 
 import video
-
-
-detector = 'orb'       # {'good', 'orb', 'sift', 'surf'}
-
 
 # params from example
 lk_params = dict(winSize=(15, 15),
@@ -39,62 +36,59 @@ lk_params = dict(winSize=(15, 15),
                  )
 
 gfeature_params = dict(maxCorners=500,
-                      qualityLevel=0.3,
-                      minDistance=7,
-                      blockSize=7)
+                       qualityLevel=0.3,
+                       minDistance=7,
+                       blockSize=7
+                      )
+orb_params = dict(nfeatures=500,
+                  scaleFactor=1.2,
+                  nlevels=10,
+                  edgeThreshold=100,
+                  firstLevel=0,
+                  WTA_K=2,
+                  # scoreType='HARRIS_SCORE',
+                  patchSize=31,
+                  fastThreshold=20
+                  )
+sift_params = dict(nfeatures=0,
+                   nOctaveLayers=3,
+                   contrastThreshold=0.04,
+                   edgeThreshold=10,
+                   sigma=1.6
+                   )
+surf_params = dict(hessianThreshold = 100,
+                   nOctaves=4,
+                   nOctaveLayers=3,
+                   extended=False,
+                   upright=False
+                   )
 
-orb_params = dict(  nfeatures=500,
-                    scaleFactor=1.2,
-                    nlevels=10,
-                    edgeThreshold=100,
-                    firstLevel=0,
-                    WTA_K=2,
-                    # scoreType='HARRIS_SCORE',
-                    patchSize=31,
-                    fastThreshold=20
-                    )
+detector = 'good'       # {'good', 'orb', 'sift', 'surf'}
+detector_params = gfeature_params
 
 def get_keypoints(frame, mask, detector, detector_params):
-    return frame
-
-
-def my_orb(img, mask):
-    orb = cv.ORB_create(**orb_params)
-    kps = orb.detect(img, mask=mask)
+    if detector == 'good':
+        kps = cv.goodFeaturesToTrack(frame, mask=mask, **gfeature_params)
+        return kps
+    elif detector == 'orb':
+        detec = cv.ORB_create(**detector_params)
+    elif detector == 'sift':
+        detec = cv.xfeatures2d.SIFT_create(**detector_params)
+    elif detector == 'surf':
+        detec = cv.xfeatures2d.SURF_create(**detector_params)
+    kps = detec.detect(frame, mask=mask)
     return cv.KeyPoint_convert(kps)
-
-
-def my_sift(img, mask):
-    sift = cv.xfeatures2d.SIFT_create(nfeatures=0,
-                                    nOctaveLayers=3,
-                                    contrastThreshold=0.04,
-                                    edgeThreshold=10,
-                                    sigma=1.6
-                                    )
-    kps = sift.detect(img, mask=mask)
-    return cv.KeyPoint_convert(kps)
-
-def my_surf(img, mask):
-    surf = cv.xfeatures2d.SURF_create(hessianThreshold = 100,
-                                    nOctaves=4,
-                                    nOctaveLayers=3,
-                                    extended=False,
-                                    upright=False
-                                    )
-    kps = surf.detect(img, mask=mask)
-    return cv.KeyPoint_convert(kps)
-
 
 class App:
     def __init__(self, video_src, start_frame=0, end_frame=None):
         self.track_len = 10
-        self.detect_interval = 20
+        self.detect_interval = 2
         self.tracks = []
         self.cam = video.create_capture(video_src)
         self.cam.set(1, start_frame)
         self.start_frame = start_frame
         self.prev_gray = None
-        # set start and end frame for terminal use
+        # set start and end frame for  use
         self.frame_idx = int(start_frame)
         if end_frame is not None:
             self.end_frame = int(end_frame)
@@ -102,20 +96,22 @@ class App:
             self.end_frame = self.cam.get(7)
         self.length = self.end_frame - start_frame
 
-    def run(self, detector='good'):
+    def run(self,
+            detector='good',
+            detector_params=gfeature_params,
+            printing=False):
 
         # counters for evaluation
         none_idx = []
-        feat_count = 0
-        lifespan = []
-        frame_size = (int(self.cam.get(3)), int(self.cam.get(4)))
+        all_tracks = []
+        frame_size = (int(self.cam.get(3)), int(self.cam.get(4))) # (width, height)
         heatmap = np.zeros(frame_size)
 
         while True:
             _ret, frame = self.cam.read()
             frame_gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+            frame_gray = cv.medianBlur(frame_gray, 25)
             vis = frame.copy()
-
             if len(self.tracks) > 0:
                 img0, img1 = self.prev_gray, frame_gray
 
@@ -131,16 +127,16 @@ class App:
 
                 for tr, (x, y), good_flag in zip(self.tracks, p1.reshape(-1, 2), good):
                     if not good_flag:
-                        lifespan.append(len(tr))
+                        all_tracks.append(tr)
                         continue
                     tr.append((x, y))
-                    heatmap[min(int(x), frame_size[0] - 1), min(int(y), frame_size[1] - 1)] += 1
+                    heatmap[min(int(x), frame_size[0] - 1),
+                            min(int(y), frame_size[1] - 1)] += 1
 
                     new_tracks.append(tr)
                     cv.circle(vis, (x, y), 3, (0, 255, 0), -1)
 
                 self.tracks = new_tracks
-                feat_count += len(self.tracks)
                 cv.polylines(vis, [np.int32(tr) for tr in self.tracks], False, (255, 255, 0))
             else:
                 none_idx.append(self.frame_idx)
@@ -150,17 +146,7 @@ class App:
                 mask[:] = 255
                 for x, y in [np.int32(tr[-1]) for tr in self.tracks]:
                     cv.circle(mask, (x, y), 5, 0, -1)
-                cv.imshow('mask', mask)
-                cv.waitKey(0)
-
-                if detector == 'good':
-                    p = cv.goodFeaturesToTrack(frame_gray, mask=mask, **gfeature_params)
-                elif detector == 'orb':
-                    p = my_orb(frame_gray, mask)
-                elif detector == 'sift':
-                    p = my_sift(frame_gray, mask)
-                elif detector == 'surf':
-                    p = my_surf(frame_gray, mask)
+                p = get_keypoints(frame_gray, mask, detector, detector_params)
 
                 if p is not None:
                     for x, y in np.float32(p).reshape(-1, 2):
@@ -174,49 +160,74 @@ class App:
 
             if ch == 27 or (self.cam.get(1) == self.end_frame):
                 for tr in self.tracks:
-                    lifespan.append(len(tr))
+                    all_tracks.append(tr)
 
+                heatmap, lifespan_hist, avg_lifespan = self.get_results(all_tracks, heatmap, printing)
+                cv.destroyAllWindows()
+                return avg_lifespan, detector, detector_params, all_tracks, heatmap, lifespan_hist
+
+    def get_results(self, tracks, heatmap, show_me=False, none_idx=None):
+        if len(tracks) <= 0:
+            print("No points found and tracked!")
+            return None
+        else:
+            lifespan = [len(track) for track in tracks]
+            rounded_lifespan = []
+            for length in lifespan:
+                rounded_lifespan.append(round(length, -1))
+            lifespan_hist = rounded_lifespan
+
+            heatmap_norm = cv.normalize(heatmap, None, alpha=0, beta=255, norm_type=cv.NORM_MINMAX,
+                                       dtype=cv.CV_8U).transpose(1, 0)
+            heatmapshow = cv.applyColorMap(heatmap_norm, cv.COLORMAP_HOT)
+
+            if show_me:
                 print('All points tracked: %s. \nLength of video: %s frames. \nAverage points per frame: %s.'
                       % (len(lifespan),
                          self.frame_idx - self.start_frame,
                          sum(lifespan) / (self.frame_idx - self.start_frame)
                          )
                       )
-                if len(lifespan) > 0:
-                    print(
-                        '\nLifespan Min: %s, Occurences: %s \nLifespanMax: %s, Occurences: %s\nAverage Lifespan: %s frames'
-                        % (min(lifespan), lifespan.count(min(lifespan)),
-                           max(lifespan), lifespan.count(max(lifespan)),
-                           sum(lifespan) / len(lifespan)))
-                    print('feat_count: ' + str(feat_count))
-                    print('sum lifespan: ' + str(sum(lifespan)))
+                print(
+                    '\nLifespan Min: %s, Occurences: %s \nLifespanMax: %s, Occurences: %s\nAverage Lifespan: %s frames'
+                    % (min(lifespan), lifespan.count(min(lifespan)),
+                       max(lifespan), lifespan.count(max(lifespan)),
+                       sum(lifespan) / len(lifespan)))
 
-                heatmapshow = cv.normalize(heatmap, None, alpha=0, beta=255, norm_type=cv.NORM_MINMAX,
-                                           dtype=cv.CV_8U)
-                heatmapshow = heatmapshow.transpose(1, 0)
-                heatmapshow = cv.applyColorMap(heatmapshow, cv.COLORMAP_HOT)
+                print('sum lifespan: ' + str(sum(lifespan)))
 
-                lifespan_hist = np.asarray(np.unique(lifespan, return_counts=True)).transpose(1, 0)
-                plt.hist(lifespan_hist, bins=np.arange(lifespan_hist.min(), lifespan_hist.max() + 1))
+
+                cv.imshow('heatmap', heatmapshow)
+                cv.waitKey(0)
+
+
+                plt.hist(lifespan_hist, bins=int(max(lifespan_hist)/10))
                 plt.show()
 
-                # Auf Dezimalstellen runden, Speicherreduktion
-                rounded = []
-                for idx in none_idx:
-                    rounded.append(round(idx, -1))
-
-                for idx in set(rounded):
+            # Frames ohne Keypoints (=blinks?)
+            # auf Dezimalstellen runden, Speicherreduktion
+            if none_idx is not None:
+                idx_round = [round(idx, -1) for idx in none_idx]
+                for idx in set(idx_round):
                     self.cam.set(1, idx)
                     _ret, none_frame = self.cam.read()
                     if not _ret:
                         continue
-                    # cv.imwrite('/home/laars/uni/BA/code/python/results/none_frame/%s.png' % (idx), none_frame)
+                    cv.imwrite('/home/laars/uni/BA/code/python/results/none_frame/%s.png' % (idx), none_frame)
+            return heatmapshow, lifespan_hist, sum(lifespan) / len(lifespan)
 
-                cv.imwrite('heatmap.png', heatmapshow)
-                cv.waitKey(0)
-                cv.destroyAllWindows()
-                break
-
+def get_Angle(pointA, pointB):
+    # angle of line1: (Ax-1, Ay) Point A, and
+    #          line2: (Point A, Point B), counterclockwise
+    # Go from point A in the following directions,to find point B.
+    # If the angle is:
+    # 0° : "down"
+    # 90° : "right"
+    # 180° : "up"
+    # 270° : "left"
+    y = pointB[1]-pointA[1]
+    x = pointB[0]-pointA[0]
+    return degrees(atan2(y, x)) % 360
 
 def main():
     import sys
@@ -230,7 +241,7 @@ def main():
         app = App(video_src, int(sys.argv[2]), int(sys.argv[3]))
     else:
         app = App(video_src)
-    app.run(detector)
+    app.run(detector, detector_params)
 
     print('Done')
 
