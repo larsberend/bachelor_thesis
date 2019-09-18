@@ -26,7 +26,9 @@ import numpy as np
 import cv2 as cv
 import matplotlib.pyplot as plt
 from math import atan,atan2,degrees
+import pandas as pd
 
+import hog
 import video
 
 # params from example
@@ -63,8 +65,8 @@ surf_params = dict(hessianThreshold = 100,
                    upright=False
                    )
 
-detector = 'good'       # {'good', 'orb', 'sift', 'surf'}
-detector_params = gfeature_params
+detector = 'sift'       # {'good', 'orb', 'sift', 'surf'}
+detector_params = sift_params
 
 def get_keypoints(frame, mask, detector, detector_params):
     if detector == 'good':
@@ -103,7 +105,7 @@ class App:
 
         # counters for evaluation
         none_idx = []
-        all_tracks = []
+        all_tracks = {}
         frame_size = (int(self.cam.get(3)), int(self.cam.get(4))) # (width, height)
         heatmap = np.zeros(frame_size)
 
@@ -112,7 +114,7 @@ class App:
             frame_gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
             frame_gray = cv.medianBlur(frame_gray, 25)
             vis = frame.copy()
-            if len(self.tracks) > 0:
+            if self.tracks:
                 img0, img1 = self.prev_gray, frame_gray
 
                 p0 = np.float32([tr[-1] for tr in self.tracks]).reshape(-1, 1, 2)
@@ -127,7 +129,7 @@ class App:
 
                 for tr, (x, y), good_flag in zip(self.tracks, p1.reshape(-1, 2), good):
                     if not good_flag:
-                        all_tracks.append(tr)
+                        all_tracks.setdefault('frame_' + str(self.frame_idx-len(tr)),[]).append(tr)
                         continue
                     tr.append((x, y))
                     heatmap[min(int(x), frame_size[0] - 1),
@@ -155,23 +157,56 @@ class App:
             self.frame_idx += 1
             self.prev_gray = frame_gray
 
-            cv.imshow('lk_track', vis)
+            cv.imshow(detector, vis)
             ch = cv.waitKey(1)
 
             if ch == 27 or (self.cam.get(1) == self.end_frame):
                 for tr in self.tracks:
-                    all_tracks.append(tr)
-
+                    all_tracks.setdefault('frame_' + str(self.frame_idx-len(tr)),[]).append(tr)
                 heatmap, lifespan_hist, avg_lifespan = self.get_results(all_tracks, heatmap, printing)
                 cv.destroyAllWindows()
                 return avg_lifespan, detector, detector_params, all_tracks, heatmap, lifespan_hist
 
     def get_results(self, tracks, heatmap, show_me=False, none_idx=None):
-        if len(tracks) <= 0:
-            print("No points found and tracked!")
-            return None
+        if not tracks:
+            print('No points found or tracked!')
+            return
         else:
-            lifespan = [len(track) for track in tracks]
+            lifespan = []
+            # get angles and magnitudes of tracks
+            angles = {}.fromkeys(tracks.keys(),[])
+            magnitudes = {}.fromkeys(tracks.keys(),[])
+            for key, value in tracks.items():
+                for li in value:
+                    track_angle = []
+                    track_mag = []
+                    for x in range(len(li)-1):
+                        lifespan.append(len(li))
+                        track_angle.append(get_Angle(li[x], li[x+1]))
+                        track_mag.append(np.linalg.norm(np.array(li[x])-np.array(li[x+1])))
+
+                    angles[key].append(track_angle)
+                    magnitudes[key].append(track_mag)
+                # for track in keys:
+                #     track_angle = []
+                #     track_mag = []
+                #     for x in range(len(track)-1):
+                #         # print(track[x]-track[x+1])
+                #         track_mag.append(np.linalg.norm(np.array(track[x])-np.array(track[x+1])))
+                #         track_angle.append(get_Angle(track[x], track[x+1]))
+                #     angles.append(track_angle)
+                #     magnitudes.append(track_mag)
+                # hist_mag_ang = hog.hog(angles, magnitudes, self.frame_idx - self.start_frame)
+            # print('tracks: \n')
+            # for y in range(10):
+            #     print(tracks[max_index][y])
+            # print('\nmagnitudes \n')
+            # print([magnitudes[max_index][z] for z in range(10)])
+            #
+            # print('\nangles\n')
+            # print([angles[max_index][i]for i in range(10)])
+
+
             rounded_lifespan = []
             for length in lifespan:
                 rounded_lifespan.append(round(length, -1))
