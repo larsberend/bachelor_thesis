@@ -25,7 +25,7 @@ from __future__ import print_function
 import numpy as np
 import cv2 as cv
 import matplotlib.pyplot as plt
-from math import atan,atan2,degrees
+from math import atan, atan2, degrees
 import pandas as pd
 
 import hog
@@ -68,6 +68,7 @@ surf_params = dict(hessianThreshold = 100,
 detector = 'sift'       # {'good', 'orb', 'sift', 'surf'}
 detector_params = sift_params
 
+
 def get_keypoints(frame, mask, detector, detector_params):
     if detector == 'good':
         kps = cv.goodFeaturesToTrack(frame, mask=mask, **gfeature_params)
@@ -80,6 +81,7 @@ def get_keypoints(frame, mask, detector, detector_params):
         detec = cv.xfeatures2d.SURF_create(**detector_params)
     kps = detec.detect(frame, mask=mask)
     return cv.KeyPoint_convert(kps)
+
 
 class App:
     def __init__(self, video_src, start_frame=0, end_frame=None):
@@ -105,7 +107,9 @@ class App:
 
         # counters for evaluation
         none_idx = []
-        all_tracks = {}
+        # all_tracks = {}
+        all_tracks = pd.DataFrame(index=['frameNr_' + str(i) for i in range(self.start_frame, self.end_frame)])
+        track_num = 0
         frame_size = (int(self.cam.get(3)), int(self.cam.get(4))) # (width, height)
         heatmap = np.zeros(frame_size)
 
@@ -126,10 +130,14 @@ class App:
                 good = d < 1
 
                 new_tracks = []
-
                 for tr, (x, y), good_flag in zip(self.tracks, p1.reshape(-1, 2), good):
                     if not good_flag:
-                        all_tracks.setdefault('frame_' + str(self.frame_idx-len(tr)),[]).append(tr)
+                        try:
+                            all_tracks[track_num]
+                        except KeyError:
+                            all_tracks[track_num]=None
+                        all_tracks.loc['frameNr_' + str(self.frame_idx-len(tr)) : 'frameNr_' + str(self.frame_idx-1), track_num] = tr
+                        track_num += 1
                         continue
                     tr.append((x, y))
                     heatmap[min(int(x), frame_size[0] - 1),
@@ -161,32 +169,82 @@ class App:
             ch = cv.waitKey(1)
 
             if ch == 27 or (self.cam.get(1) == self.end_frame):
+
                 for tr in self.tracks:
-                    all_tracks.setdefault('frame_' + str(self.frame_idx-len(tr)),[]).append(tr)
+                    try:
+                        all_tracks[track_num]
+                    except KeyError:
+                        all_tracks[track_num] = None
+                    all_tracks.loc['frameNr_' + str(self.frame_idx-len(tr)) : 'frameNr_' + str(self.frame_idx-1), track_num] = tr
+                    track_num += 1
                 heatmap, lifespan_hist, avg_lifespan = self.get_results(all_tracks, heatmap, printing)
                 cv.destroyAllWindows()
                 return avg_lifespan, detector, detector_params, all_tracks, heatmap, lifespan_hist
 
+    def AngMag(self, tracks, return_df = True, ho_bins=8):
+        angles = pd.DataFrame().reindex_like(tracks)
+        mags = pd.DataFrame().reindex_like(tracks)
+
+        hogs = pd.DataFrame(index = tracks.index, columns=np.arange(0, ho_bins))
+        for nr_row in range(tracks.shape[0]-1):
+            for nr_col in range(tracks.shape[1]):
+                a = tracks.iloc[nr_row, nr_col]
+                b = tracks.iloc[nr_row+1][nr_col]
+                if a is not None and b is not None:
+                    angle = get_Angle(a,b)
+                    angles.iloc[nr_row+1, nr_col] = angle
+                    mag = np.linalg.norm(np.array(a)-np.array(b))
+                    mags.iloc[nr_row+1, nr_col] = mag
+            ang_li = [x for x in list(angles.iloc[nr_row+1]) if not np.isnan(x)]
+            mag_li = [x for x in list(mags.iloc[nr_row+1]) if not np.isnan(x)]
+            hogs.iloc[nr_row+1] = hog.hog(ang_li, mag_li, ho_bins)
+
+
+
+        return hogs, angles, mags
+
     def get_results(self, tracks, heatmap, show_me=False, none_idx=None):
-        if not tracks:
+        if tracks.empty:
             print('No points found or tracked!')
-            return
+            return None, None, None
         else:
             lifespan = []
             # get angles and magnitudes of tracks
-            angles = {}.fromkeys(tracks.keys(),[])
-            magnitudes = {}.fromkeys(tracks.keys(),[])
-            for key, value in tracks.items():
-                for li in value:
-                    track_angle = []
-                    track_mag = []
-                    for x in range(len(li)-1):
-                        lifespan.append(len(li))
-                        track_angle.append(get_Angle(li[x], li[x+1]))
-                        track_mag.append(np.linalg.norm(np.array(li[x])-np.array(li[x+1])))
+            hogs, angles, magnitudes = self.AngMag(tracks)
+            print(hogs,'\n', angles,'\n', magnitudes)
+            # li = list(angles.loc['frameNr_5'])
+            # li = [x for x in li if not np.isnan(x)]
+            #
+            # li2 = list(magnitudes.loc['frameNr_5'])
+            # li2 = [y for y in li2 if not np.isnan(y)]
+            #
+            # ho = hog.hog(li,li2, 8)
+            # print(type(ho))
+        # for row in tracks.itertuples(index=False):
 
-                    angles[key].append(track_angle)
-                    magnitudes[key].append(track_mag)
+
+
+            # for start_fr, tr_nr in tracks.iteritems():
+            #     print(start_fr)
+            #     print('\ntr_nr')
+            #     print(tr_nr[start_fr])
+            #     if tr_nr[start_fr]:
+            #         for l in range(len(tr_nr[start_fr])-1):
+            #             # angles[start_fr][tr_nr]=
+            #             print(get_Angle(tr_nr[start_fr][l], tr_nr[start_fr][l+1]))
+            # angles = {}.fromkeys(tracks.keys(),[])
+            # magnitudes = {}.fromkeys(tracks.keys(),[])
+            # for key, value in tracks.items():
+            #     for li in value:
+            #         track_angle = []
+            #         track_mag = []
+            #         for x in range(len(li)-1):
+            #             lifespan.append(len(li))
+            #             track_angle.append(get_Angle(li[x], li[x+1]))
+            #             track_mag.append(np.linalg.norm(np.array(li[x])-np.array(li[x+1])))
+            #
+            #         angles[key].append(track_angle)
+            #         magnitudes[key].append(track_mag)
                 # for track in keys:
                 #     track_angle = []
                 #     track_mag = []
