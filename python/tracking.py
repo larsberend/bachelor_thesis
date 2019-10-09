@@ -37,7 +37,7 @@ lk_params = dict(winSize=(15, 15),
                  criteria=(cv.TERM_CRITERIA_EPS | cv.TERM_CRITERIA_COUNT, 10, 0.03),
                  )
 gfeature_params = dict(maxCorners=200,
-                       qualityLevel=0.3,
+                       qualityLevel=0.6,
                        minDistance=7,
                        blockSize=7
                        )
@@ -105,36 +105,44 @@ class keypoint_tracker:
         self.prev_gray = None
         # set start and end frame for  use
         self.frame_idx = int(start_frame)
-        if end_frame is not None:
-            self.end_frame = int(end_frame)
-        else:
-            self.end_frame = self.cam.get(7)
+        self.end_frame = self.cam.get(7) if end_frame is None else end_frame
         self.length = self.end_frame - start_frame
     def run(self,
             detector='good',
             detector_params=gfeature_params,
-            printing=True):
+            lk_params=lk_params,
+            resize=(3/4, 3/4),
+            filterType='median',
+            filterSize=(15,15),
+            printing=True,
+            angMag = False):
 
         # counters for evaluation
         none_idx = []
         # all_tracks = pd.DataFrame(index=['frameNr_' + str(i) for i in range(self.start_frame, self.end_frame)])
         all_tracks = {}
         track_num = 0
-        frame_size = (int(self.cam.get(3)), int(self.cam.get(4)))  # (width, height)
+        frame_size = (int(self.cam.get(3)*resize[0]), int(self.cam.get(4)*resize[1]))  # (width, height)
         heatmap = np.zeros(frame_size)
 
-
         while True:
+            if self.frame_idx%1000 == 0:
+                print(self.frame_idx)
             _ret, frame = self.cam.read()
+            if filterType == 'median':
+                frame = cv.medianBlur(frame, filterSize[0])
+            frame = cv.resize(frame, frame_size)
             frame_gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
-            frame_gray = cv.medianBlur(frame_gray, 55)
-            vis = frame_gray.copy()
-            if self.tracks:
+            vis = frame.copy()
+
+            if not self.tracks:
+                none_idx.append(self.frame_idx)
+
+            else:
                 img0, img1 = self.prev_gray, frame_gray
 
                 p0 = np.float32([tr[-1] for tr in self.tracks]).reshape(-1, 1, 2)
-                p1, st, _err = cv.calcOpticalFlowPyrLK(img0, img1, p0, None, **lk_params)
-
+                p1, _st, _err = cv.calcOpticalFlowPyrLK(img0, img1, p0, None, **lk_params)
                 p0r, _st, _err = cv.calcOpticalFlowPyrLK(img1, img0, p1, None, **lk_params)
 
                 d = abs(p0 - p0r)
@@ -159,15 +167,14 @@ class keypoint_tracker:
                     cv.circle(vis, (x, y), 3, (0, 255, 0), -1)
 
                 self.tracks = new_tracks
-                cv.polylines(vis, [np.int32(tr) for tr in self.tracks], False, (255, 255, 0))
-            else:
-                none_idx.append(self.frame_idx)
+                if printing:
+                    cv.polylines(vis, [np.int32(tr) for tr in self.tracks], False, (255, 255, 0))
 
             if self.frame_idx % self.detect_interval == 0:
-                mask = np.zeros_like(frame_gray)
-                mask[:] = 255
+                mask = np.full(frame_gray.shape, fill_value=255, dtype=np.uint8)
                 for x, y in [np.int32(tr[-1]) for tr in self.tracks]:
                     cv.circle(mask, (x, y), 5, 0, -1)
+
                 p = get_keypoints(frame_gray, mask, detector, detector_params)
 
                 if p is not None:
@@ -177,10 +184,10 @@ class keypoint_tracker:
             self.frame_idx += 1
             self.prev_gray = frame_gray
 
-            cv.imshow(detector, vis)
+            if printing:
+                cv.imshow(detector, vis)
 
             ch = cv.waitKey(1)
-
             if ch == 27 or (self.cam.get(1) == self.end_frame):
                 # print('End of video reached.')
                 for tr in self.tracks:
@@ -188,28 +195,19 @@ class keypoint_tracker:
                     # all_tracks.iloc[self.frame_idx - len(tr): self.frame_idx, track_num] = tr
                     all_tracks.setdefault(self.frame_idx-len(tr),[]).append(tr)
                     track_num += 1
-                avg_lifespan, hist_lifespan, heatmap, hod = self.get_results(all_tracks,track_num, heatmap, show_me=printing)
-                cv.destroyAllWindows()
-                return detector, detector_params, avg_lifespan, hist_lifespan, heatmap, hod
 
-    # def AngMag2(self, tracks, return_df = True, ho_bins=8):
-    #     angles = pd.DataFrame().reindex_like(tracks)
-    #     mags = pd.DataFrame().reindex_like(tracks)
-    #
-    #     hogs = pd.DataFrame(index = tracks.index, columns=np.arange(0, ho_bins))
-    #     for nr_row in range(tracks.shape[0]-1):
-    #         for nr_col in range(tracks.shape[1]):
-    #             a = tracks.iloc[nr_row, nr_col]
-    #             b = tracks.iloc[nr_row+1][nr_col]
-    #             if a is not None and b is not None:
-    #                 angle = get_Angle(a,b)
-    #                 angles.iloc[nr_row+1, nr_col] = angle
-    #                 mag = np.linalg.norm(np.array(a)-np.array(b))
-    #                 mags.iloc[nr_row+1, nr_col] = mag
-    #         ang_li = [x for x in list(angles.iloc[nr_row+1]) if not np.isnan(x)]
-    #         mag_li = [x for x in list(mags.iloc[nr_row+1]) if not np.isnan(x)]
-    #         hogs.iloc[nr_row+1] = hog.hog(ang_li, mag_li, ho_bins)
-    #     return hogs, angles, mags
+                avg_lifespan, hist_lifespan, heatmap = self.get_results(all_tracks,track_num, heatmap, show_me=printing)
+                print(avg_lifespan)
+                hod = None
+                if angMag:
+                    hod, angles, magnitudes = self.AngMag(tracks)
+
+                cv.destroyAllWindows()
+                self.cam.release()
+                if hod is None:
+                    return [avg_lifespan, hist_lifespan, heatmap, none_idx]
+                else:
+                    return [avg_lifespan, hist_lifespan, heatmap, hod, none_idx]
 
     def AngMag(self, tracks, return_df=True, ho_bins=8):
         angles = np.full((tracks.shape[0], tracks.shape[1]), np.nan)
@@ -235,22 +233,21 @@ class keypoint_tracker:
                                     dtype=cv.CV_8U).transpose(1, 0)
         hogshow = cv.applyColorMap(hog_norm, cv.COLORMAP_SUMMER)
 
-        cv.imwrite('directions.png',hogshow)
+        #cv.imwrite('directions.png',hogshow)
             #
             # print(ang_li,"\nmag\n")
             # print(mag_li,"\nhogs\n")
             # print(hogs[nr_row+1])
 
         # print("tracks\n", tracks,"\hogs\n", np.unique(hogs[1:,:], return_counts=True),'\nang\n',angles.shape,"\nmag\n", mags.shape)
-        return hogs, angles, mags
+        return hogshow
 
     def get_results(self, tracks, track_num, heatmap, show_me=False, none_idx=None):
         # print('Calculating results...')
         if not tracks:
             print('No points found or tracked!')
         else:
-            long_tr = max(tracks, key=lambda x:len(tracks[x]))
-            np_tracks = np.full((track_num, self.end_frame, 2), fill_value=0, dtype=np.float32)
+            np_tracks = np.zeros((track_num, self.end_frame, 2), dtype=np.float32)
             tr_num = 0
             lifespan = []
             for key in tracks:
@@ -259,14 +256,11 @@ class keypoint_tracker:
                     np_tracks[tr_num, key : key + len(tracks[key][x])]=tracks[key][x]
                     tr_num += 1
             tracks = np_tracks
-            # get angles and magnitudes of tracks
-            hogs, angles, magnitudes = self.AngMag(tracks)
 
             lifespan_hist = np.round(np.array(lifespan), -1)
-
             heatmap_norm = cv.normalize(heatmap, None, alpha=0, beta=255, norm_type=cv.NORM_MINMAX,
                                         dtype=cv.CV_8U).transpose(1, 0)
-            heatmapshow = cv.applyColorMap(heatmap_norm, cv.COLORMAP_COOL)
+            heatmapshow = cv.applyColorMap(heatmap_norm, cv.COLORMAP_SUMMER)
 
             if show_me:
                 print('All points tracked: %s. \nLength of video: %s frames. \nAverage points per frame: %s.'
@@ -284,8 +278,6 @@ class keypoint_tracker:
                 print('sum lifespan: ' + str(sum(lifespan)))
 
                 cv.imwrite('heatmap.png', heatmapshow)
-                cv.waitKey(0)
-
                 plt.hist(lifespan_hist, bins=int(max(lifespan_hist) / 20))
                 plt.show()
 
@@ -300,7 +292,7 @@ class keypoint_tracker:
                         continue
                     cv.imwrite('/home/laars/uni/BA/code/python/results/none_frame/%s.png' % (idx), none_frame)
 
-            return sum(lifespan) / len(lifespan), lifespan_hist, heatmapshow, hogs
+            return sum(lifespan) / len(lifespan), lifespan_hist, heatmapshow
 
 
 def main():
