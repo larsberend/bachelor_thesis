@@ -32,40 +32,40 @@ import hog
 import video
 
 # params from example
-lk_params = dict(winSize=(15, 15),
-                 maxLevel=10,
-                 criteria=(cv.TERM_CRITERIA_EPS | cv.TERM_CRITERIA_COUNT, 10, 0.03),
-                 )
-gfeature_params = dict(maxCorners=200,
-                       qualityLevel=0.6,
-                       minDistance=7,
-                       blockSize=7
-                       )
-orb_params = dict(nfeatures=500,
-                  scaleFactor=1.2,
-                  nlevels=10,
-                  edgeThreshold=100,
-                  firstLevel=0,
-                  WTA_K=2,
-                  scoreType=0, # 0= HARRIS_SCORE, 1= FAST_SCORE
-                  patchSize=31,
-                  fastThreshold=20
-                  )
-sift_params = dict(nfeatures=500,
-                   nOctaveLayers=3,
-                   contrastThreshold=0.04,
-                   edgeThreshold=10,
-                   sigma=1.6
-                   )
-surf_params = dict(hessianThreshold=100,
-                   nOctaves=4,
-                   nOctaveLayers=3,
-                   extended=False,
-                   upright=False
-                   )
+# lk_params = dict(winSize=(15, 15),
+#                  maxLevel=10,
+#                  criteria=(cv.TERM_CRITERIA_EPS | cv.TERM_CRITERIA_COUNT, 10, 0.03),
+#                  )
+# gfeature_params = dict(maxCorners=10,
+#                        qualityLevel=0.99,
+#                        minDistance=7,
+#                        blockSize=7
+#                        )
+# orb_params = dict(nfeatures=500,
+#                   scaleFactor=1.2,
+#                   nlevels=10,
+#                   edgeThreshold=100,
+#                   firstLevel=0,
+#                   WTA_K=2,
+#                   scoreType=0, # 0= HARRIS_SCORE, 1= FAST_SCORE
+#                   patchSize=31,
+#                   fastThreshold=20
+#                   )
+# sift_params = dict(nfeatures=500,
+#                    nOctaveLayers=3,
+#                    contrastThreshold=0.04,
+#                    edgeThreshold=10,
+#                    sigma=1.6
+#                    )
+# surf_params = dict(hessianThreshold=100,
+#                    nOctaves=4,
+#                    nOctaveLayers=3,
+#                    extended=False,
+#                    upright=False
+#                    )
 
-detector = 'good'  # {'good', 'orb', 'sift', 'surf'}
-detector_params = gfeature_params
+# detector = 'good'  # {'good', 'orb', 'sift', 'surf'}
+# detector_params = gfeature_params
 
 
 def get_Angle(pointA, pointB):
@@ -83,7 +83,7 @@ def get_Angle(pointA, pointB):
 
 def get_keypoints(frame, mask, detector, detector_params):
     if detector == 'good':
-        kps = cv.goodFeaturesToTrack(frame, mask=mask, **gfeature_params)
+        kps = cv.goodFeaturesToTrack(frame, mask=mask, **detector_params)
         return kps
     elif detector == 'orb':
         detec = cv.ORB_create(**detector_params)
@@ -96,27 +96,27 @@ def get_keypoints(frame, mask, detector, detector_params):
 
 
 class keypoint_tracker:
-    def __init__(self, video_src, start_frame=0, end_frame=None):
-        self.detect_interval = 5
+    def __init__(self, video_src, start_frame=None, end_frame=None):
+        self.detect_interval = 20
         self.tracks = []
         self.cam = video.create_capture(video_src)
-        self.cam.set(1, start_frame)
-        self.start_frame = start_frame
+        self.frame_idx = 0 if start_frame is None else int(start_frame)
+        self.start_frame = self.frame_idx
+        self.cam.set(1, self.start_frame)
         self.prev_gray = None
         # set start and end frame for  use
-        self.frame_idx = int(start_frame)
         self.end_frame = self.cam.get(7) if end_frame is None else end_frame
-        self.length = self.end_frame - start_frame
+        self.length = self.end_frame - self.start_frame
     def run(self,
-            detector='good',
-            detector_params=gfeature_params,
-            lk_params=lk_params,
-            resize=(3/4, 3/4),
-            filterType='median',
-            filterSize=(15,15),
-            printing=True,
-            angMag = False):
-
+            detector,
+            detector_params,
+            lk_params,#=lk_params,
+            resize,#=(3/4, 3/4),
+            filterType,#='median',
+            filterSize,#=(25,25),
+            printing,#=True,
+            angMag):# = False):
+        print(detector_params)
         # counters for evaluation
         none_idx = []
         # all_tracks = pd.DataFrame(index=['frameNr_' + str(i) for i in range(self.start_frame, self.end_frame)])
@@ -246,6 +246,7 @@ class keypoint_tracker:
         # print('Calculating results...')
         if not tracks:
             print('No points found or tracked!')
+            return [None] * 3
         else:
             np_tracks = np.zeros((track_num, self.end_frame, 2), dtype=np.float32)
             tr_num = 0
@@ -260,7 +261,7 @@ class keypoint_tracker:
             lifespan_hist = np.round(np.array(lifespan), -1)
             heatmap_norm = cv.normalize(heatmap, None, alpha=0, beta=255, norm_type=cv.NORM_MINMAX,
                                         dtype=cv.CV_8U).transpose(1, 0)
-            heatmapshow = cv.applyColorMap(heatmap_norm, cv.COLORMAP_SUMMER)
+            heatmapshow = cv.applyColorMap(heatmap_norm, cv.COLORMAP_COOL)
 
             if show_me:
                 print('All points tracked: %s. \nLength of video: %s frames. \nAverage points per frame: %s.'
