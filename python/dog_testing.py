@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 '''
-Script to test shi-tomasi feature detector located in tracking.py
+Script to test difference of gaussian features located in tracking.py
 The following data is saved as a Dataframe in the specified location:
 
 video_path,
@@ -58,10 +58,10 @@ except:
     raise AssertionError('No video specified!')
 
 folder = '/home/laars/uni/BA/eyes/Gold_Standard_Kopien/videos/'
-save_path = '/home/laars/uni/BA/code/python/results/no_blinks/dataframes/gfeat/'
+save_path = '/home/laars/uni/BA/code/python/results/no_blinks/dataframes/dog/'
 
-start = 0
-end = 10000
+start = 4590
+end = 4600
 lk_params = dict(winSize=(15, 15),
                  maxLevel=10,
                  criteria=(cv.TERM_CRITERIA_EPS | cv.TERM_CRITERIA_COUNT, 10, 0.03),
@@ -83,10 +83,11 @@ try:
 except (EOFError, FileNotFoundError) as e:
     print('First time for this video.')
     last_stop = [np.uint32(0)]
-    grid = selection.ParameterGrid(dict(maxCorners=np.arange(10, 511, 250),
-                                        qualityLevel=np.array([0.1, 0.5, 0.9]),
-                                        minDistance=np.arange(1, 62, 30),
-                                        blockSize=np.array([2,3,5])
+    grid = selection.ParameterGrid(dict(nfeatures=np.array([10, 250]),
+                                        nOctaveLayers=np.array([1, 3, 5]),
+                                        contrastThreshold=np.array([0.01, 0.04, 0.1]),
+                                        edgeThreshold=np.array([2, 10, 15]),
+                                        sigma=np.array([1.0, 1.6, 2.5])
                                         )
                                     )
 
@@ -103,7 +104,7 @@ if last_stop[-1] < len(grid)-1:
         results = [video_path, [grid[y]], [lk_params], filterType, filterSize, resize]
         start_t = timeit.default_timer()
         # detector, detector_params, avg_lifespan, hist_lifespan, heatmap = kt.run(detector='good', detector_params=params)
-        results.extend(kt.run(  detector='good',
+        results.extend(kt.run(  detector='sift',
                                 detector_params=grid[y],
                                 lk_params=lk_params,
                                 resize=resize,
@@ -161,7 +162,7 @@ for x in range(len(results_arr)):
         all_data.iloc[x,z] = results_arr[x][z]
 print('sorting by avg_lifespan...')
 sorted_data = all_data.sort_values(by='avg_lifespan', ascending=False)
-print('saving to: '+ save_path + video  + '_test' + '.pickle ...')
+print('saving to: '+ save_path + video  + '_test' + '.pickle...')
 file = open(save_path + video  + '_test' + '.pickle', 'wb')
 pickle.dump(sorted_data, file)
 file.close()

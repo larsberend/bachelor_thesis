@@ -32,40 +32,40 @@ import hog
 import video
 
 # params from example
-# lk_params = dict(winSize=(15, 15),
-#                  maxLevel=10,
-#                  criteria=(cv.TERM_CRITERIA_EPS | cv.TERM_CRITERIA_COUNT, 10, 0.03),
-#                  )
-# gfeature_params = dict(maxCorners=10,
-#                        qualityLevel=0.99,
-#                        minDistance=7,
-#                        blockSize=7
-#                        )
-# orb_params = dict(nfeatures=500,
-#                   scaleFactor=1.2,
-#                   nlevels=10,
-#                   edgeThreshold=100,
-#                   firstLevel=0,
-#                   WTA_K=2,
-#                   scoreType=0, # 0= HARRIS_SCORE, 1= FAST_SCORE
-#                   patchSize=31,
-#                   fastThreshold=20
-#                   )
-# sift_params = dict(nfeatures=500,
-#                    nOctaveLayers=3,
-#                    contrastThreshold=0.04,
-#                    edgeThreshold=10,
-#                    sigma=1.6
-#                    )
-# surf_params = dict(hessianThreshold=100,
-#                    nOctaves=4,
-#                    nOctaveLayers=3,
-#                    extended=False,
-#                    upright=False
-#                    )
+lk_params = dict(winSize=(15, 15),
+                 maxLevel=10,
+                 criteria=(cv.TERM_CRITERIA_EPS | cv.TERM_CRITERIA_COUNT, 10, 0.03),
+                 )
+gfeature_params = dict(maxCorners=10,
+                       qualityLevel=0.99,
+                       minDistance=7,
+                       blockSize=7
+                       )
+orb_params = dict(nfeatures=500,
+                  scaleFactor=1.2,
+                  nlevels=10,
+                  edgeThreshold=100,
+                  firstLevel=0,
+                  WTA_K=2,
+                  scoreType=0, # 0= HARRIS_SCORE, 1= FAST_SCORE
+                  patchSize=31,
+                  fastThreshold=20
+                  )
+sift_params = dict(nfeatures=500,
+                   nOctaveLayers=3,
+                   contrastThreshold=0.04,
+                   edgeThreshold=10,
+                   sigma=1.6
+                   )
+surf_params = dict(hessianThreshold=100,
+                   nOctaves=4,
+                   nOctaveLayers=3,
+                   extended=False,
+                   upright=False
+                   )
 
-# detector = 'good'  # {'good', 'orb', 'sift', 'surf'}
-# detector_params = gfeature_params
+detector = 'good'  # {'good', 'orb', 'sift', 'surf'}
+detector_params = gfeature_params
 
 
 def get_Angle(pointA, pointB):
@@ -97,7 +97,7 @@ def get_keypoints(frame, mask, detector, detector_params):
 
 class keypoint_tracker:
     def __init__(self, video_src, start_frame=None, end_frame=None):
-        self.detect_interval = 20
+        self.detect_interval = 10
         self.tracks = []
         self.cam = video.create_capture(video_src)
         self.frame_idx = 0 if start_frame is None else int(start_frame)
@@ -105,22 +105,23 @@ class keypoint_tracker:
         self.cam.set(1, self.start_frame)
         self.prev_gray = None
         # set start and end frame for  use
-        self.end_frame = self.cam.get(7) if end_frame is None else end_frame
+        self.end_frame = int(self.cam.get(7)) if end_frame is None else end_frame
         self.length = self.end_frame - self.start_frame
     def run(self,
             detector,
             detector_params,
-            lk_params,#=lk_params,
-            resize,#=(3/4, 3/4),
-            filterType,#='median',
-            filterSize,#=(25,25),
-            printing,#=True,
-            angMag):# = False):
+            lk_params=lk_params,
+            resize=(3/4, 3/4),
+            filterType='median',
+            filterSize=(25,25),
+            printing=True,
+            angMag = False):
         print(detector_params)
         # counters for evaluation
         none_idx = []
         # all_tracks = pd.DataFrame(index=['frameNr_' + str(i) for i in range(self.start_frame, self.end_frame)])
         all_tracks = {}
+        lifespans = []
         track_num = 0
         frame_size = (int(self.cam.get(3)*resize[0]), int(self.cam.get(4)*resize[1]))  # (width, height)
         heatmap = np.zeros(frame_size)
@@ -156,7 +157,10 @@ class keypoint_tracker:
                         if len(tr) > 1:
                             # all_tracks[track_num] = None
                             # all_tracks.iloc[self.frame_idx - len(tr): self.frame_idx, track_num] = tr
-                            all_tracks.setdefault(self.frame_idx-len(tr),[]).append(tr)
+                            if angMag:
+                                all_tracks.setdefault(self.frame_idx-len(tr),[]).append(tr)
+                            else:
+                                lifespans.append(len(tr))
                         track_num += 1
                         continue
                     tr.append((x, y))
@@ -191,73 +195,44 @@ class keypoint_tracker:
             if ch == 27 or (self.cam.get(1) == self.end_frame):
                 # print('End of video reached.')
                 for tr in self.tracks:
-                    # all_tracks[track_num] = np.nan
-                    # all_tracks.iloc[self.frame_idx - len(tr): self.frame_idx, track_num] = tr
-                    all_tracks.setdefault(self.frame_idx-len(tr),[]).append(tr)
+                    if angMag:
+                        all_tracks.setdefault(self.frame_idx-len(tr),[]).append(tr)
+                    else:
+                        lifespans.append(len(tr))
                     track_num += 1
 
-                avg_lifespan, hist_lifespan, heatmap = self.get_results(all_tracks,track_num, heatmap, show_me=printing)
-                print(avg_lifespan)
-                hod = None
                 if angMag:
+                    lifespans = self.calc_lifespans(all_tracks, track_num)
                     hod, angles, magnitudes = self.AngMag(tracks)
-
+                if lifespans:
+                    avg_lifespan, hist_lifespan, heatmap = self.get_results(lifespans, heatmap, show_me=printing)
+                else:
+                    avg_lifespan, hist_lifespan, heatmap = None, None, None
+                print(avg_lifespan)
                 cv.destroyAllWindows()
                 self.cam.release()
-                if hod is None:
-                    return [avg_lifespan, hist_lifespan, heatmap, none_idx]
-                else:
+                if angMag:
                     return [avg_lifespan, hist_lifespan, heatmap, hod, none_idx]
+                else:
+                    return [avg_lifespan, hist_lifespan, heatmap, none_idx]
 
-    def AngMag(self, tracks, return_df=True, ho_bins=8):
-        angles = np.full((tracks.shape[0], tracks.shape[1]), np.nan)
-        mags = np.copy(angles)
-
-        hogs = np.full((tracks.shape[0], ho_bins), np.nan)
-        for nr_row in range(tracks.shape[0] - 1):
-            for nr_col in range(tracks.shape[1]):
-                a = tracks[nr_row, nr_col]
-                b = tracks[nr_row + 1][nr_col]
-                if a is not None and b is not None:
-                    angle = get_Angle(a, b)
-                    angles[nr_row + 1, nr_col] = angle
-                    mag = np.linalg.norm(np.array(a) - np.array(b))
-                    mags[nr_row + 1, nr_col] = mag
-
-            ang_li = [x for x in list(angles[nr_row + 1]) if not np.isnan(x)]
-            mag_li = [x for x in list(mags[nr_row + 1]) if not np.isnan(x)]
-            hogs[nr_row + 1, :] = hog.hog(ang_li, mag_li, ho_bins)
-        hogs = hogs[1:]
-        # print(np.unique(hogs[1:], return_counts=True))
-        hog_norm = cv.normalize(hogs, None, alpha=0, beta=255, norm_type=cv.NORM_MINMAX,
-                                    dtype=cv.CV_8U).transpose(1, 0)
-        hogshow = cv.applyColorMap(hog_norm, cv.COLORMAP_SUMMER)
-
-        #cv.imwrite('directions.png',hogshow)
-            #
-            # print(ang_li,"\nmag\n")
-            # print(mag_li,"\nhogs\n")
-            # print(hogs[nr_row+1])
-
-        # print("tracks\n", tracks,"\hogs\n", np.unique(hogs[1:,:], return_counts=True),'\nang\n',angles.shape,"\nmag\n", mags.shape)
-        return hogshow
-
-    def get_results(self, tracks, track_num, heatmap, show_me=False, none_idx=None):
-        # print('Calculating results...')
+    def calc_lifespans(self, tracks, track_num):
         if not tracks:
             print('No points found or tracked!')
-            return [None] * 3
+            return [None]
         else:
-            np_tracks = np.zeros((track_num, self.end_frame, 2), dtype=np.float32)
+            np_tracks = np.zeros((track_num, self.end_frame, 2), dtype=np.uint16)
             tr_num = 0
             lifespan = []
             for key in tracks:
                 for x in range(len(tracks[key])):
                     lifespan.append(len(tracks[key][x]))
-                    np_tracks[tr_num, key : key + len(tracks[key][x])]=tracks[key][x]
+                    np_tracks[tr_num, key : key + len(tracks[key][x])]=np.uint16(tracks[key][x])
                     tr_num += 1
-            tracks = np_tracks
+            return lifespan, np_tracks
 
+
+    def get_results(self, lifespan, heatmap, show_me=False, none_idx=None):
             lifespan_hist = np.round(np.array(lifespan), -1)
             heatmap_norm = cv.normalize(heatmap, None, alpha=0, beta=255, norm_type=cv.NORM_MINMAX,
                                         dtype=cv.CV_8U).transpose(1, 0)
@@ -292,9 +267,39 @@ class keypoint_tracker:
                     if not _ret:
                         continue
                     cv.imwrite('/home/laars/uni/BA/code/python/results/none_frame/%s.png' % (idx), none_frame)
-
             return sum(lifespan) / len(lifespan), lifespan_hist, heatmapshow
+    def AngMag(self, tracks, return_df=True, ho_bins=8):
+        angles = np.full((tracks.shape[0], tracks.shape[1]), np.nan)
+        mags = np.copy(angles)
 
+        hogs = np.full((tracks.shape[0], ho_bins), np.nan)
+        for nr_row in range(tracks.shape[0] - 1):
+            for nr_col in range(tracks.shape[1]):
+                a = tracks[nr_row, nr_col]
+                b = tracks[nr_row + 1][nr_col]
+                if a is not None and b is not None:
+                    angle = get_Angle(a, b)
+                    angles[nr_row + 1, nr_col] = angle
+                    mag = np.linalg.norm(np.array(a) - np.array(b))
+                    mags[nr_row + 1, nr_col] = mag
+
+            ang_li = [x for x in list(angles[nr_row + 1]) if not np.isnan(x)]
+            mag_li = [x for x in list(mags[nr_row + 1]) if not np.isnan(x)]
+            hogs[nr_row + 1, :] = hog.hog(ang_li, mag_li, ho_bins)
+        hogs = hogs[1:]
+        # print(np.unique(hogs[1:], return_counts=True))
+        hog_norm = cv.normalize(hogs, None, alpha=0, beta=255, norm_type=cv.NORM_MINMAX,
+                                    dtype=cv.CV_8U).transpose(1, 0)
+        hogshow = cv.applyColorMap(hog_norm, cv.COLORMAP_SUMMER)
+
+        #cv.imwrite('directions.png',hogshow)
+            #
+            # print(ang_li,"\nmag\n")
+            # print(mag_li,"\nhogs\n")
+            # print(hogs[nr_row+1])
+
+        # print("tracks\n", tracks,"\hogs\n", np.unique(hogs[1:,:], return_counts=True),'\nang\n',angles.shape,"\nmag\n", mags.shape)
+        return hogshow
 
 def main():
     import sys
