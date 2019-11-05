@@ -1,0 +1,46 @@
+\documentclass[Bachelorarbeit.tex]{subfiles}
+\begin{document}
+
+\newpage
+\section{Experimental Setup}
+\label{Experimental Setup}
+
+
+\subsection{Data}
+The data used to evaluate is comprised of various videos of participants' eyes, recorded via infrared cameras mounted to their head. The quantity, resolution and framerate of the cameras vary. Each of the participants solved tasks in virtual reality including following an object with their gaze (smooth pursuit), looking at objects appearing in random places in their visual field (saccades) and fixating unmoving objects for some time. The videos were recorded by the company mindQ for their project EyeTraX. 
+
+\subsection{Preprocessing}
+To enhance the response of the detectors and decrease the runtime, some preprocessing turned out to be crucial. First, resizing is used to increase the number of keypoints found by the detectors and also to decrease the runtime of the application.
+Second, a median filter was applied for a) Denoising and b) diminishing strong structures like hair (eye-brows and -lashes), which are not useful for eye-tracking concerning with the pupil. 
+
+\subsection{Optical Flow}
+- was ist optical flow
+- hinfürhung berechnung 
+\subsubsection{Differential Estimation}
+- taylor, ableitungen
+- optical flow equation
+- zwei unbekannte
+- mehrere methoden zur lösung
+
+\subsubsection{lucas kanade}
+- methode zur lösung
+- nachbarn
+- mit pixeln oder keypoints
+\subsection{Key point detectors}
+from the wide range of key point detection algorithms three were chosen. as gauglitz pointed different keypoint detectors, which are suitable for tracking
+...
+
+\subsubsection{Shi-Tomasi}
+- harris
+- kurz, wie er funktioniert
+\subsubsection{SIFT}
+- classic
+\subsubsection{FAST}
+- 
+
+
+
+\subsection{aha}
+
+\FloatBarrier
+\end{document}

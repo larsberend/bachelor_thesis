@@ -1,0 +1,17 @@
+\documentclass[Bachelorarbeit.tex]{subfiles}
+\begin{document}
+
+\newpage
+\section{Results}
+\label{Results}
+In the following section, results of testing are presented. First, an evaluation of each step, the comparison of parameters for each key point detection algorithm, Lucas-Kanade optical flow and preprocessing is analyzed, with a main focus on low level measures like average lifespan and runtime. Thereafter, having compared each setting on these simple measures, insight is given for more sophisticated measures explained in \autoref{setup}.
+
+\subsection{Comparison by average lifespan and runtime}
+When comparing the average lifespan of various settings, the most remarkable result is the difference between the two videos taken by cameras with a frame-rate of 120 Hz and those with 200 Hz. All key point detectors show a notable higher lifespan and runtime for this increase in frame rate and lower resolution. Furthermore, The Shi-Tomasi detector shows the highest performance in these measures, concerning the videos with 120 fps. It is second for the average lifespan in videos with 200 fps after the difference of Gaussian detector, but is the fastest one of all three. The Fast Hessian key point detector performs worst in the videos with 200 fps, but is in second place for videos with the lower frame-rate. Interestingly, the difference of Gaussian approach shows the worst performance concerning average lifespan in 120 fps videos, but the best in 200 fps videos. The runtime is much lower in both classes of videos for the Shi-Tomasi detector than the other two, which show no significant difference in the one with lower frame-rate. The difference of Gaussian detector is also a bit faster in detection in videos with 200 fps compared to the fast Hessian approach.\\
+
+When looking at different values for parameters of each algorithm, beginning with the Shi-Tomasi corner detector. A medium quality level seems to perform better than higher or lower values. A large distance between corner points proves to be a good approach, since higher values have a better performance. Also, larger neighborhood to calculate the covariation matrix proves to be more successful than smaller ones. Furthermore, the restriction by a maximum of detected corners does not seem to change a lot in average lifespan, and only slightly in runtime. For the fast Hessian detector, the longest average lifespan yields a combination of parameters with just one octave and only one octave layer and a moderately small Hessian threshold of 100. In general, combinations with a low number of octaves seem to prove superior. Good results yield low to moderate numbers of octave layers and the Hessian threshold offers a high variance.
+For the difference of Gaussian approach, a low contrast threshold seems to be most important for a good average lifespan, followed by the edge threshold. High and moderate values for sigma and octave layers yield better results than lower ones.
+
+
+\FloatBarrier
+\end{document}

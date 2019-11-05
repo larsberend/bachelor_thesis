@@ -1,0 +1,106 @@
+\begin{thebibliography}{16}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Barron et~al.(1992)Barron, Fleet, Beauchemin, and
+  Burkitt]{barron1992performance}
+John~L Barron, David~J Fleet, Steven~S Beauchemin, and TA~Burkitt.
+\newblock Performance of optical flow techniques.
+\newblock In \emph{Proceedings 1992 IEEE Computer Society Conference on
+  Computer Vision and Pattern Recognition}, pages 236--242. IEEE, 1992.
+
+\bibitem[Bay et~al.(2006)Bay, Tuytelaars, and Van~Gool]{bay2006surf}
+Herbert Bay, Tinne Tuytelaars, and Luc Van~Gool.
+\newblock Surf: Speeded up robust features.
+\newblock In \emph{European conference on computer vision}, pages 404--417.
+  Springer, 2006.
+
+\bibitem[Bouguet et~al.(2001)]{bouguet2001pyramidal}
+Jean-Yves Bouguet et~al.
+\newblock Pyramidal implementation of the affine lucas kanade feature tracker
+  description of the algorithm.
+\newblock \emph{Intel Corporation}, 5\penalty0 (1-10):\penalty0 4, 2001.
+
+\bibitem[Delon(2004)]{delon2004midway}
+Julie Delon.
+\newblock Midway image equalization.
+\newblock \emph{Journal of Mathematical Imaging and Vision}, 21\penalty0
+  (2):\penalty0 119--134, 2004.
+
+\bibitem[Delon and Desolneux(2010)]{delon2010stabilization}
+Julie Delon and Agnes Desolneux.
+\newblock Stabilization of flicker-like effects in image sequences through
+  local contrast correction.
+\newblock \emph{SIAM Journal on Imaging Sciences}, 3\penalty0 (4):\penalty0
+  703--734, 2010.
+
+\bibitem[Galvin et~al.(1998)Galvin, McCane, Novins, Mason, Mills,
+  et~al.]{galvin1998recovering}
+Ben Galvin, Brendan McCane, Kevin Novins, David Mason, Steven Mills, et~al.
+\newblock Recovering motion fields: An evaluation of eight optical flow
+  algorithms.
+\newblock In \emph{BMVC}, volume~98, pages 195--204, 1998.
+
+\bibitem[Gauglitz et~al.(2011)Gauglitz, H{\"o}llerer, and
+  Turk]{gauglitz2011evaluation}
+Steffen Gauglitz, Tobias H{\"o}llerer, and Matthew Turk.
+\newblock Evaluation of interest point detectors and feature descriptors for
+  visual tracking.
+\newblock \emph{International journal of computer vision}, 94\penalty0
+  (3):\penalty0 335, 2011.
+
+\bibitem[Harris et~al.(1988)Harris, Stephens, et~al.]{harris1988combined}
+Christopher~G Harris, Mike Stephens, et~al.
+\newblock A combined corner and edge detector.
+\newblock In \emph{Alvey vision conference}, volume~15, pages 10--5244.
+  Citeseer, 1988.
+
+\bibitem[Horn and Schunck(1981)]{horn1981determining}
+Berthold~KP Horn and Brian~G Schunck.
+\newblock Determining optical flow.
+\newblock \emph{Artificial intelligence}, 17\penalty0 (1-3):\penalty0 185--203,
+  1981.
+
+\bibitem[Itseez(2019)]{itseez2019theopencv}
+Itseez.
+\newblock \emph{The OpenCV Reference Manual}, 4.1.1 edition, July 2019.
+
+\bibitem[Lowe(2004)]{lowe2004distinctive}
+David~G Lowe.
+\newblock Distinctive image features from scale-invariant keypoints.
+\newblock \emph{International journal of computer vision}, 60\penalty0
+  (2):\penalty0 91--110, 2004.
+
+\bibitem[Lucas et~al.(1981)Lucas, Kanade, et~al.]{lucas1981iterative}
+Bruce~D Lucas, Takeo Kanade, et~al.
+\newblock An iterative image registration technique with an application to
+  stereo vision.
+\newblock 1981.
+
+\bibitem[Rojas(2010)]{rojas2010lucas}
+Ra{\'u}l Rojas.
+\newblock Lucas-kanade in a nutshell.
+\newblock \emph{Freie Universit at Berlinn, Dept. of Computer Science, Tech.
+  Rep}, 2010.
+
+\bibitem[Shi and Tomasi(1993)]{shi1993good}
+Jianbo Shi and Carlo Tomasi.
+\newblock Good features to track.
+\newblock Technical report, Cornell University, 1993.
+
+\bibitem[Tuytelaars et~al.(2008)Tuytelaars, Mikolajczyk,
+  et~al.]{tuytelaars2008local}
+Tinne Tuytelaars, Krystian Mikolajczyk, et~al.
+\newblock Local invariant feature detectors: A survey.
+\newblock \emph{Foundations and trends{\textregistered} in computer graphics
+  and vision}, 3\penalty0 (3):\penalty0 177--280, 2008.
+
+\bibitem[Viola et~al.(2001)Viola, Jones, et~al.]{viola2001rapid}
+Paul Viola, Michael Jones, et~al.
+\newblock Rapid object detection using a boosted cascade of simple features.
+\newblock \emph{CVPR (1)}, 1\penalty0 (511-518):\penalty0 3, 2001.
+
+\end{thebibliography}
