@@ -38,8 +38,8 @@ lk_params = dict(winSize=(15, 15),
                  )
 gfeature_params = dict(maxCorners=10,
                        qualityLevel=0.99,
-                       minDistance=7,
-                       blockSize=7
+                       minDistance=61,
+                       blockSize=5
                        )
 orb_params = dict(nfeatures=500,
                   scaleFactor=1.2,
@@ -109,7 +109,7 @@ class keypoint_tracker:
         self.length = self.end_frame - self.start_frame
     def run(self,
             detector,
-            detector_params,
+            detector_params=detector_params,
             lk_params=lk_params,
             resize=(3/4, 3/4),
             filterType='median',
@@ -148,7 +148,7 @@ class keypoint_tracker:
 
                 d = abs(p0 - p0r)
                 d = d.reshape(-1, 2).max(-1)
-                good = d < 1
+                good = d < 2
                 # good = np.logical_not(good)
                 # good = st
                 new_tracks = []

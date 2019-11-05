@@ -83,8 +83,7 @@ try:
 except (EOFError, FileNotFoundError) as e:
     print('First time for this video.')
     last_stop = [np.uint32(0)]
-    grid = selection.ParameterGrid(dict(nfeatures=np.array([10, 250]),
-                                        nOctaveLayers=np.array([1, 3, 5]),
+    grid = selection.ParameterGrid(dict(nOctaveLayers=np.array([1, 3, 5]),
                                         contrastThreshold=np.array([0.01, 0.04, 0.1]),
                                         edgeThreshold=np.array([2, 10, 15]),
                                         sigma=np.array([1.0, 1.6, 2.5])

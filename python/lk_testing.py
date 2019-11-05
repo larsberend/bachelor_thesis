@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 '''
-Script to test difference of gaussian features located in tracking.py
+Script to test shi-tomasi feature detector located in tracking.py
 The following data is saved as a Dataframe in the specified location:
 
 video_path,
@@ -57,16 +57,11 @@ try:
 except:
     raise AssertionError('No video specified!')
 
-folder = '/home/laars/uni/BA/eyes/Gold_Standard_Kopien/videos/'
-save_path = '/home/laars/uni/BA/code/python/results/no_blinks/dataframes/fhess/'
+folder = '../videos/'
+save_path = '../results/no_blinks/dataframes/lk/'
 
-start = 4590
-end = 4600
-lk_params = dict(winSize=(15, 15),
-                 maxLevel=10,
-                 criteria=(cv.TERM_CRITERIA_EPS | cv.TERM_CRITERIA_COUNT, 10, 0.03),
-                 # termination criteria, epsilon AND count of iterations is used.
-                 )
+start = 0
+end = 10
 
 filterType='median'
 filterSize=(21,21)
@@ -78,33 +73,59 @@ try:
 
             last_stop = np.fromfile(stop_file, dtype=np.uint32)
             print(last_stop)
-            grid = pickle.load(file)
+            grid_lk = pickle.load(file)
         print('No error in filehandling')
 except (EOFError, FileNotFoundError) as e:
     print('First time for this video.')
     last_stop = [np.uint32(0)]
-    grid = selection.ParameterGrid(dict(hessianThreshold=np.array([10, 50, 100, 200, 500]),
-                                        nOctaves=np.array([1, 3, 5]),
-                                        nOctaveLayers=np.array([1, 3, 5]),
-                                        )
-                                    )
+    grid_lk = selection.ParameterGrid(dict( winSize=[(5,5), (15, 15), (31,31)],
+                                            maxLevel=[0, 3, 6],
+                                            criteria=[(3, 4, 0.5),
+                                                      (3, 10, 0.05),
+                                                      (3, 30, 0.03),
+                                                      ],
+                                            # termination criteria, epsilon AND count of iterations is used.
+                                            detec=[('sift', {'sigma': 2.5, 'nOctaveLayers': 3, 'edgeThreshold': 2, 'contrastThreshold': 0.1}),
+                                                ('sift', {'sigma': 2.5, 'nOctaveLayers': 5, 'edgeThreshold': 2, 'contrastThreshold': 0.1}),
+                                                ('sift', {'sigma': 1.6, 'nOctaveLayers': 3, 'edgeThreshold': 2, 'contrastThreshold': 0.1}),
 
+                                                ('surf',{'nOctaves':0 , 'nOctaveLayers': 0, 'hessianThreshold': 0}),
+                                                ('surf',{'nOctaves':0 , 'nOctaveLayers': 0, 'hessianThreshold': 0}),
+                                                ('surf',{'nOctaves':0 , 'nOctaveLayers': 0, 'hessianThreshold': 0}),
+
+                                                ('good',{'qualityLevel': 0.5, 'minDistance': 61, 'maxCorners': 510, 'blockSize': 5}),
+                                                ('good',{'qualityLevel': 0.5, 'minDistance': 61, 'maxCorners': 10, 'blockSize': 5})
+                                                    ]
+                                          )
+                                      )
+    print(len([p for p in grid_lk]))
     with open(save_path + video  + '_test' + '.pickle', 'wb') as file:
-        pickle.dump(grid, file)
+        pickle.dump(grid_lk, file)
 
 video_path = folder + video
 print('video_path: ' + video_path)
 
-if last_stop[-1] < len(grid)-1:
-    for y in range(last_stop[-1], len(grid)):
-        print('Job %s of %s' %(str(y), str(len(grid))))
+if last_stop[-1] < len(grid_lk)-1:
+    for y in range(last_stop[-1], len(grid_lk)):
+        print('Job %s of %s' %(str(y), str(len(grid_lk))))
         kt = tr.keypoint_tracker(video_path, start_frame=start, end_frame=end)
-        results = [video_path, [grid[y]], [lk_params], filterType, filterSize, resize]
+        print(type(grid_lk))
+        print(type(grid_lk[y]))
+        print(grid_lk[y])
+        grid_dic = grid_lk[y]#.pop('detec')
+        detector = grid_dic.pop('detec')
+        print('detector')
+        print(detector)
+        print('gridy')
+        print(grid_dic)
+        print('gridyende')
+
+        results = [video_path, [detector], [grid_dic], filterType, filterSize, resize]
         start_t = timeit.default_timer()
         # detector, detector_params, avg_lifespan, hist_lifespan, heatmap = kt.run(detector='good', detector_params=params)
-        results.extend(kt.run(  detector='surf',
-                                detector_params=grid[y],
-                                lk_params=lk_params,
+        results.extend(kt.run(  detector=detector[0],
+                                detector_params=detector[1],
+                                lk_params=grid_dic,
                                 resize=resize,
                                 filterType=filterType,
                                 filterSize=filterSize,
@@ -124,7 +145,7 @@ if last_stop[-1] < len(grid)-1:
                 file.write(bin_results)
                 pos_grid.tofile(stop_file)
 
-print('Done with grid.')
+print('Done with grid_lk.')
 with open(save_path + video  + '_test' + '.pickle', 'rb+') as file:
     pload = pickle.load(file)
     if type(pload)==pd.core.frame.DataFrame:
@@ -152,7 +173,7 @@ all_data = pd.DataFrame(index = range(len(grid)),
                                  ]
                         )
 print('Filling Dataframe...')
-print(len(grid))
+print(len(grid_lk))
 print('resulsts arr: ')
 print(len(results_arr))
 for x in range(len(results_arr)):
@@ -160,7 +181,7 @@ for x in range(len(results_arr)):
         all_data.iloc[x,z] = results_arr[x][z]
 print('sorting by avg_lifespan...')
 sorted_data = all_data.sort_values(by='avg_lifespan', ascending=False)
-print('saving to: '+ save_path + video  + '_test' + '.pickle...')
+print('saving to: '+ save_path + video  + '_test' + '.pickle ...')
 file = open(save_path + video  + '_test' + '.pickle', 'wb')
 pickle.dump(sorted_data, file)
 file.close()
