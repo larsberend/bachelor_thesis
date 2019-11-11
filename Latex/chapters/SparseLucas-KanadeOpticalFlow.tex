@@ -6,7 +6,6 @@
 \label{Sparse Lucas Kanade Optical Flow}
 %- to detect movement problem specific, good keypoints and parameters have to be found
 %- no ground truth, hard to come by + no use, since we only detect movement and not classify
-\todo{gesamtkonzept, keypoint detektoren}
 In the following sections a method to search for the best setup for eye-movement analysis is carved out. These setups consisting of preprocessing, key point detection and Lucas-Kanade optical flow. Firstly, these setups are explained. Secondly, in \autoref{detectors}, key point detection in general is presented and the algorithms used in this work are explained in further detail. Thirdly, in \autoref{setup}, the structure for evaluation of these setups are defined. Lastly, the testing is presented in general on the scripts being used.\\
 The sparse version of Lucas' and Kanade's method calculates the optical flow on a set of key points in the image.  
 %A large amount of key point detection algorithms exist, an overview is given in \autoref{lk} \todo{an anfang}. 
@@ -59,7 +58,7 @@ Another Blob detector, the fast Hessian detector, was proposed by \cite{bay2006s
 \subsection{Setup for Evaluation}
 \label{setup}
 In the following subsections, a setup to evaluate three methods to detect key points in eye-videos which can be tracked by the method of Lucas and Kanade. In the beginning, the dataset is explained, followed by qualitative measures to evaluate different setups to calculate optical flow with the Lucas-Kanade method, each including preprocessing of the data and key point detection. 
-\todo{noch mehr intro}
+ %\todo{noch mehr intro}
 \subsubsection{Dataset}
 \label{dataset}
 The data was acquired by filming a subject solving small tasks in virtual reality. Two cameras are located in the virtual reality glasses and pointed at the subject's left and right eye. Three different sets of videos exist. 10 subjects were filmed doing the newest version of the test, with an average video length of 5 minutes. The frame-rate corresponds to 120 Hz and the videos have a resolution of 640 x 320 pixel. 1 subject was recorded doing the same test, but at a frame-rate of 200 Hz and a resolution of 192 x 192 pixel. 8 subjects were recorded doing an older version of the test in virtual reality, which takes about 3 minutes, also at a framerate of 120 Hz and a resolution of 640 x 320 pixel. This dataset was annotated with timestamps of blinks. Examples for each dataset can be seen in \autoref{data_figure}. Even though the cameras are mounted to the subject's head, videos contain not only eyes, and not always every part of the eye. As seen in \autoref{data_figure}b), both canthi, the corners of eyes where the eyelids meet, are not visible in every video. Furthermore, unmoving, strong structures can be viewed in \autoref{data_figure}a) in the upper right corner. Beside this and noise in the recordings, another disruption of videos is visible. One infrared light can be seen turning on and off, leading to a so-called flicker in large parts of the images, as can be seen in \autoref{flicker_figure}. 
@@ -122,39 +121,44 @@ Another simple measure is the runtime of the overall algorithm. Even though the 
 \subsubsection*{Lifespan}
 \label{lifespan}
 \begin{center}
-	\includegraphics[width=0.7\linewidth]{Images/hist_proto}
+	\includegraphics[width=0.7\linewidth]{Images/960_gfeat}
 	
-	\captionof{figure}{Histogram of quantity of keypoints being tracked over time in frames }\todo{beschriftung!!}
+	\captionof{figure}{Histogram of quantity of keypoints being tracked over time in frames}Sum of tracks = 960. Average lifespan = 303.525 
+	\\Shi-Tomasi parameters: qualityLevel = 0.9, minDistance = 1, maxCorners = 260, blockSize = 5
 	\label{hist_im}
 \end{center}
-A second measure for comparison is how long optical flow can track the found key points, the so-called lifespan. In particular, it supplies the sum of how often the Lucas-Kanade optical flow can calculate the location of a point in the following frame. This can easily be counted and is essential for comparison. First, the average lifespan over all videos is calculated and the best few are selected. In further analysis, a histogram is helpful, see \autoref{hist_im}. The data is visible for a part of a video comprising 1000 frames and using the Shi-Tomasi corner detector. The data is rounded to decades. A peak is visible at a lifespan of ~80 frames with over 140 tracks. A lot of
+A second measure for comparison is how long optical flow can track the found key points, the so-called lifespan. In particular, it supplies the sum of how often the Lucas-Kanade optical flow can calculate the location of a point in the following frame. This can easily be counted and is essential for comparison. First, the average lifespan over all videos is calculated and the best few are selected. In further analysis, a histogram is helpful, see \autoref{hist_im}. The data is visible for a part of a video comprising 10000 frames and using the Shi-Tomasi corner detector. The data is rounded to decades. Many key points can no longer be tracked after a few frames, hence the peak around 0.
 
-\todo{aktuelles histogram, beschreibung dafür, infos: params, avg. lifespan, wie viele keypoints etc}
-
-
-
-
-- how long can optical flow track?
-- important to see with distribution
 
 \subsubsection*{Spatial Distribution of Key Points}
 \label{dist}
 \begin{center}
-	\includegraphics[width=0.5\linewidth]{Images/heatmap_proto}
-	\captionof{figure}{Heatmap of duration of tracking in image plane.}
+	\includegraphics[width=0.5\linewidth]{Images/heat_not_inv}
+	\captionof{figure}{Heatmap of duration of tracking in image plane.} The brighter the pixel, the more often it was a key point location. 
+	\\Shi-Tomasi parameters: qualityLevel: 0.5, minDistance = 61, maxCorners = 260, blockSize = 5
 	\label{heatmap}
 \end{center}
 A third qualitative measure for the detection algorithms is where key points are located. Included is the location of points that are found by a detection algorithm, but also the locations which have been estimated by the optical flow algorithm. Figure 4 shows a heatmap which presents this information. By comparison with the actual image in the video it is possible to see if the locations are semantically relevant. Distribution over the whole image are desired. Especially so over moving parts, as this is information directly valuable for the task at hand, being motion detection. But also key points tracked at generally unmoving parts are important because if movement is measured there, a disruption of world parameters is likely, e.g. a change in the location of the camera or lighting conditions. 
 \\It is important to carefully examine these measures with respect to each other. A very high lifespan is a generally desirable result, but if there are just a few key points found, which are all located in unmoving parts of the video it is still not a good outcome. The same can be said about a well distribution of key points over the images with a very small average lifespan, since it signifies that key points can not be tracked well with the optical flow method.
 
+%[{'qualityLevel': 0.5, 'minDistance': 61, 'maxCorners': 260, 'blockSize': 5}], gfeat, (3/4,3/4), median (21,21)
+%winSize=(15, 15), maxLevel=10,criteria=(cv.TERM_CRITERIA_EPS | cv.TERM_CRITERIA_COUNT, 10, 0.03),
+
+
+
 %- where are the keypoints located?
 %- semantically relevant?
 %- good: distributed over whole image
 %- even without movement, explanation for moving of camera!
+\subsubsection{Blink Detection}
+The only quantitative measure is to test, if one of the setups can yield insight to motion. Accordingly, the location of every tracked point is noted and additionally the average magnitude and direction of all key points between one frame and the next is measured. Visualization for interpretation can be accomplished by a heatmap of directions. In it, every frame is a slice with 8 bins of directions, measured in degrees. Direction is calculated by drawing an imaginary circle, the origin being the point in the first frame. If the location of this point is to the below of this origin, it counts towards the average of 0°. Same for other directions, running counter-clockwise on the circle, 90° means the new location is to the right, 180° upwards and by 270° the movement took place in left direction.\todo{Bild}
+This calculation yields a heatmap, in which for evry two frames, movement of the key points should be visible in direction and magnitude. Therefore, interpretation and even a simple classification of eye movement could be possible. 
+
+
 
 \subsection{Preprocessing}
 \label{preprocessing}
-To improve the accuracy of movement detection it is of importance to remove irregularities from the data. The techniques to process the videos before detecting key point alter the findings significantly and their parameters are therefore a part of testing. The frames are filtered with Gaussian or median kernels and resized via interpolation. This reduces noise and also possibly destroys larger structures seen in the image, depending on the kernel size. Destruction of those could lead to a better measurment, because they are unmoving.\todo{entscheide, ob du die zerstören willst oder nicht} The smaller sizes and (median-) filtering leads to a larger difference of pixels beside each other and therefore more key points to find \todo{ref}
+To improve the accuracy of movement detection it is of importance to remove irregularities from the data. Techniques to process the videos before detecting key points alter the findings significantly and their parameters are therefore a part of testing. The frames are filtered with Gaussian or median kernels and resized via interpolation. This reduces noise and also possibly destroys larger structures seen in the image, depending on the kernel size. This could lead to a better measurement of motion, because these are unmoving. The smaller reduction of resolution and filtering leads to a larger difference of pixels beside each other and therefore possibly more stable key points to find \citep[p. 2]{bouguet2001pyramidal}
 \todo{bilder einfügen}
 %When watching the videos, a hardware circumstance is visible: one of the infrared lamps of the eyetracker is turning on and off, leading to a flicker in some videos (\autoref{flicker_figure}).
 To test if the flicker, as explained in \autoref{dataset}, has significant impact on the performance of the tested motion analysis, a procedure to remove this flicker is applied. Midway equalization, as shown by \cite{delon2004midway} takes the histogram of gray values from two or more consecutive frames and calculates an equalized version, changing the values of the single frames.  
@@ -167,7 +171,7 @@ To test if the flicker, as explained in \autoref{dataset}, has significant impac
 \subsection{Testing}
 \label{testing}
 
-In this section, implementations to gain information to measure, as explained in \autoref{setup} are presented. The machine is working with Python 3.7.4 and OpenCV 4.1.1. To be tested is the following: parameters for detection algorithms, parameters for Lucas-Kanade optical flow, and preprocessing. Because the computational load would explode by testing all combinations at once, not every configuration of parameters is going to be tested. \todo{vlt eine rechnung?} Rather, three steps are applied: First, detector parameters are tested with a fixed framework of optical flow and preprocessing steps. Second, the framework is set with fixed parameters for the detection algorithms proven to be best and fixed preprocessing and optical flow is tested with these. In a third step, preprocessing is tested with fixed optical flow and key point detection. Afterwards, key point detectors will be tested again to validate the results. What follows is a listing of parameters with a short explanation.
+In this section, implementations to gain information to measure, as explained in \autoref{setup} are presented. The machine is working with Python 3.7.4 and OpenCV 4.1.1. To be tested is the following: parameters for detection algorithms, parameters for Lucas-Kanade optical flow, and preprocessing. Because the computational load would explode by testing all combinations at once, not every configuration of parameters is going to be tested. Rather, three steps are applied: First, detector parameters are tested with a fixed framework of optical flow and preprocessing steps. Second, the framework is set with fixed parameters for the detection algorithms proven to be best and fixed preprocessing and optical flow is tested with these. In a third step, preprocessing is tested with fixed optical flow and key point detection. Afterwards, key point detectors will be tested again to validate the results, and lastly a heatmap of directions is calculated to have a simple proof of concept. The strongest up and down movement, visible in this heatmap, should yield blinks at that point in time. Verification is performed by the author. What follows is a listing of parameters with a short explanation.
 
 \subsubsection{Shi-Tomasi Corner Detector}
 The Shi-Tomasi detector is implemented in the used version of OpenCV in use as cv2.goodfeaturestotrack() and users can change it with the following parameters \citep{itseez2019theopencv}:
@@ -209,7 +213,6 @@ The Lucas Kanade optical flow method is implemented in the OpenCV library as cv2
 \end{itemize}
 
 \subsubsection{Preprocessing}
-\todo{wie mach ich das mit abkürzung, lk opt flow?}
 To test the improvement of precision by detection and tracking of key points by altering the preprocessing steps, the following steps are taken into account:
 \begin{itemize}
 	\item Downsampling by bilinear interpolation, as is used by cv2.resize()
@@ -218,11 +221,11 @@ To test the improvement of precision by detection and tracking of key points by 
 \end{itemize}
 
 
-- explain scripts: testing.py, gfeattesting.py etc
-cycle: testing detectors with fixed values for lkparams und preprocessing
-dann fixed detectors, lk params
-dann fixed detectors, preprocessing
-dann noch einmal keypoint detectors
+%- explain scripts: testing.py, gfeattesting.py etc
+%cycle: testing detectors with fixed values for lkparams und preprocessing
+%dann fixed detectors, lk params
+%dann fixed detectors, preprocessing
+%dann noch einmal keypoint detectors
 
 
 \FloatBarrier

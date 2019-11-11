@@ -3,47 +3,46 @@ Capacity: max_strings=35307, hash_size=35307, hash_prime=30011
 The top-level auxiliary file: Bachelorarbeit.aux
 The style file: plainnat.bst
 Database file #1: LiteraturVZ.bib
-Warning--can't use both volume and number fields in harris1988combined
 Warning--empty journal in lucas1981iterative
-You've used 16 entries,
+You've used 19 entries,
             2773 wiz_defined-function locations,
-            694 strings with 7299 characters,
-and the built_in function-call counts, 7512 in all, are:
-= -- 686
-> -- 394
-< -- 14
-+ -- 136
-- -- 120
-* -- 592
-:= -- 1139
-add.period$ -- 50
-call.type$ -- 16
-change.case$ -- 83
-chr.to.int$ -- 16
-cite$ -- 34
-duplicate$ -- 364
-empty$ -- 631
-format.name$ -- 143
-if$ -- 1595
+            710 strings with 7703 characters,
+and the built_in function-call counts, 8678 in all, are:
+= -- 791
+> -- 453
+< -- 17
++ -- 157
+- -- 138
+* -- 653
+:= -- 1311
+add.period$ -- 59
+call.type$ -- 19
+change.case$ -- 98
+chr.to.int$ -- 19
+cite$ -- 39
+duplicate$ -- 428
+empty$ -- 732
+format.name$ -- 164
+if$ -- 1854
 int.to.chr$ -- 1
 int.to.str$ -- 1
-missing$ -- 14
-newline$ -- 87
-num.names$ -- 64
-pop$ -- 159
+missing$ -- 15
+newline$ -- 102
+num.names$ -- 76
+pop$ -- 200
 preamble$ -- 1
-purify$ -- 66
+purify$ -- 78
 quote$ -- 0
-skip$ -- 282
+skip$ -- 341
 stack$ -- 0
-substring$ -- 295
-swap$ -- 57
-text.length$ -- 6
+substring$ -- 307
+swap$ -- 72
+text.length$ -- 7
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 176
-warning$ -- 2
-while$ -- 73
+type$ -- 209
+warning$ -- 1
+while$ -- 83
 width$ -- 0
-write$ -- 215
-(There were 2 warnings)
+write$ -- 252
+(There was 1 warning)

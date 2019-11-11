@@ -1,4 +1,4 @@
-\begin{thebibliography}{16}
+\begin{thebibliography}{19}
 \providecommand{\natexlab}[1]{#1}
 \providecommand{\url}[1]{\texttt{#1}}
 \expandafter\ifx\csname urlstyle\endcsname\relax
@@ -30,12 +30,17 @@ Julie Delon.
 \newblock \emph{Journal of Mathematical Imaging and Vision}, 21\penalty0
   (2):\penalty0 119--134, 2004.
 
-\bibitem[Delon and Desolneux(2010)]{delon2010stabilization}
-Julie Delon and Agnes Desolneux.
-\newblock Stabilization of flicker-like effects in image sequences through
-  local contrast correction.
-\newblock \emph{SIAM Journal on Imaging Sciences}, 3\penalty0 (4):\penalty0
-  703--734, 2010.
+\bibitem[Ehinger et~al.(2019)Ehinger, Gross, Ibs, and Koenig]{ehinger2019new}
+Benedikt~V Ehinger, Katharina Gross, Inga Ibs, and Peter Koenig.
+\newblock A new comprehensive eye-tracking test battery concurrently evaluating
+  the pupil labs glasses and the eyelink 1000.
+\newblock \emph{BioRxiv}, page 536243, 2019.
+
+\bibitem[Fogelton and Benesova(2016)]{fogelton2016eye}
+Andrej Fogelton and Wanda Benesova.
+\newblock Eye blink detection based on motion vectors analysis.
+\newblock \emph{Computer Vision and Image Understanding}, 148:\penalty0 23--33,
+  2016.
 
 \bibitem[Galvin et~al.(1998)Galvin, McCane, Novins, Mason, Mills,
   et~al.]{galvin1998recovering}
@@ -58,6 +63,11 @@ Christopher~G Harris, Mike Stephens, et~al.
 \newblock In \emph{Alvey vision conference}, volume~15, pages 10--5244.
   Citeseer, 1988.
 
+\bibitem[Holmqvist(2017)]{holmqvist2017common}
+Kenneth Holmqvist.
+\newblock Common predictors of accuracy, precision and data loss in 12
+  eye-trackers, 2017.
+
 \bibitem[Horn and Schunck(1981)]{horn1981determining}
 Berthold~KP Horn and Brian~G Schunck.
 \newblock Determining optical flow.
@@ -79,6 +89,12 @@ Bruce~D Lucas, Takeo Kanade, et~al.
 \newblock An iterative image registration technique with an application to
   stereo vision.
 \newblock 1981.
+
+\bibitem[mindQ(2018)]{eyeTrax}
+mindQ.
+\newblock eyetrax.
+\newblock \url{https://www.eyetrax.de/index_en.html}, 2018.
+\newblock Accessed: 2019-11-08.
 
 \bibitem[Rojas(2010)]{rojas2010lucas}
 Ra{\'u}l Rojas.

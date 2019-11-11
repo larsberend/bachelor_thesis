@@ -5,5 +5,8 @@
 \contentsline {figure}{\numberline {4}{\ignorespaces As opposed to the upscaling being done in key point detection with the difference of Gaussian approach (left), the image is not supsambled, but the box-filter is upscaled to include different scales.\relax }}{8}{figure.4}
 \contentsline {figure}{\numberline {5}{\ignorespaces Variations of data: \textbf {a)} and \textbf {b)} 640 x 320 @ 120 fps. \textbf {c)} 320 x 240 @ 120 frames and \textbf {d)} 192 x 192 @ 200 fps. Rotation and camera angle are not identical, e.g. in \textbf {b)} only one canthi is part of the image. \relax }}{10}{figure.5}
 \contentsline {figure}{\numberline {6}{\ignorespaces Flicker\relax }}{10}{figure.6}
-\contentsline {figure}{\numberline {7}{\ignorespaces Histogram of quantity of keypoints being tracked over time in frames \relax }}{11}{figure.7}
+\contentsline {figure}{\numberline {7}{\ignorespaces Histogram of quantity of keypoints being tracked over time in frames\relax }}{11}{figure.7}
 \contentsline {figure}{\numberline {8}{\ignorespaces Heatmap of duration of tracking in image plane.\relax }}{12}{figure.8}
+\contentsline {figure}{\numberline {9}{\ignorespaces Values of best settings for each key point detector, averaged over all videos in the respective framerate\relax }}{16}{figure.9}
+\contentsline {figure}{\numberline {10}{\ignorespaces Values of best settings for each key point detector and the Lucas-Kanade algorithm, averaged over all videos in the respective framerate\relax }}{18}{figure.10}
+\contentsline {figure}{\numberline {11}{\ignorespaces Values of best settings for each key point detector and the Lucas-Kanade algorithm, averaged over all videos in the respective framerate\relax }}{20}{figure.11}

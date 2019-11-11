@@ -132,6 +132,8 @@ class keypoint_tracker:
             _ret, frame = self.cam.read()
             if filterType == 'median':
                 frame = cv.medianBlur(frame, filterSize[0])
+            elif filterType == 'gauss':
+                frame = cv.GaussianBlur(frame, filterSize, sigmaX=0)
             frame = cv.resize(frame, frame_size)
             frame_gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
             vis = frame.copy()
