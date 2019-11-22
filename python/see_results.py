@@ -7,6 +7,9 @@ import pickle
 import sys
 import bz2
 
+# extract, print and show images of .pickle files created by testing.
+
+
 def show_lifespan(data):
     for ls, det_para, lk_para in zip(data.head(5)['avg_lifespan'][:], data.head(5)['detector_params'][:], data.head(5)['lk_params']):
         print(ls)

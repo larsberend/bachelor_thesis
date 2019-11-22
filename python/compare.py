@@ -7,6 +7,8 @@ import pickle
 import sys
 import bz2
 
+
+# make pickel files with all files from videos with 120 Hz, saving as pickle
 def make_comp(detector):
     comp = [[],[],[],[],[],[],[]]
     for i in range(10):
@@ -26,6 +28,7 @@ def make_comp(detector):
     with open('results/no_blinks/dataframes/%s/comp120.pickle'%(detector), 'wb') as file:
         pickle.dump(comp, file)
 
+# make dataframes for videos with 200 Hz, saving as pickle
 def make_comp200(detector):
     comp = [[],[],[],[],[],[],[]]
     file = bz2.open('results/no_blinks/dataframes/%s/%s_eye%s.mp4_test.pickle.bz2'%(detector, 200,0), 'rb')
@@ -48,7 +51,7 @@ def make_comp200(detector):
     with open('results/no_blinks/dataframes/%s/comp200.pickle'%(detector), 'wb') as file:
         pickle.dump(comp, file)
 
-
+# take pickled dataframes and create pretty csv files.
 
 def see_comp(detector, with_200):
     if with_200==True:
@@ -95,24 +98,28 @@ if __name__=='__main__':
     # make_comp('dog')
     # make_comp('fhess')
     # make_comp('lk')
-    # make_comp('prep')
+    # make_comp('lk_sift')
+    # make_comp('prep_san')
+    make_comp('prep')
     #
     # make_comp200('fhess')
     # make_comp200('gfeat')
     # make_comp200('dog')
     #
-    # make_comp200('lk')
+    # make_comp200('prep200')
     # make_comp200('prep')
-    make_comp200('prep200')
+    # make_comp200('prep200_san')
     # see_comp('dog', True)
     # see_comp('fhess', True)
     # see_comp('gfeat', True)
     # see_comp('lk', True)
-    see_comp('prep200', True)
+    # see_comp('prep200_san', True)
+    # see_comp('prep200', True)
     # print('ohne 200\n\n\n')
     #
     # see_comp('dog',False)
     # see_comp('fhess', False)
     # see_comp('gfeat', False)
     # see_comp('lk', False)
-    # see_comp('prep', False)
+    # see_comp('lk_sift', False)
+    see_comp('prep', False)

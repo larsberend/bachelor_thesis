@@ -1,16 +1,16 @@
 #!/usr/bin/env python
-# python3 tracking.py /home/laars/uni/BA/eyes/000/eye1.mp4 0 1000
 """
 Lucas-Kanade tracker
 ====================
 
-Lucas-Kanade sparse optical flow demo. Uses goodFeaturesToTrack
+Lucas-Kanade sparse optical flow. Key point detection via Shi-Tomasi,
+fast Hessian and DoG is implemented with
 for track initialization and back-tracking for match verification
 between frames.
 
 Usage
 -----
-lk_track.py [<video_source>] [/start_frame] [/end_frame]
+tracking.py [<video_source>] [/start_frame] [/end_frame]
 
 
 Keys
@@ -18,9 +18,6 @@ Keys
 ESC - exit
 
 """
-
-# Python 2/3 compatibility
-from __future__ import print_function
 
 import numpy as np
 import cv2 as cv
@@ -31,26 +28,19 @@ import pandas as pd
 import hog
 import video
 
-# params from example
-lk_params = dict(winSize=(15, 15),
-                 maxLevel=10,
-                 criteria=(cv.TERM_CRITERIA_EPS | cv.TERM_CRITERIA_COUNT, 10, 0.03),
+# For easy usage, example parameters are specified here. 
+# For different ones, change them here or call function with different ones.
+
+
+lk_params = dict(winSize=(31, 31),
+                 maxLevel=3,
+                 criteria=(cv.TERM_CRITERIA_EPS | cv.TERM_CRITERIA_COUNT, 4, 0.5),
                  )
-gfeature_params = dict(maxCorners=10,
-                       qualityLevel=0.99,
+gfeature_params = dict(maxCorners=510,
+                       qualityLevel=0.5,
                        minDistance=61,
                        blockSize=5
                        )
-orb_params = dict(nfeatures=500,
-                  scaleFactor=1.2,
-                  nlevels=10,
-                  edgeThreshold=100,
-                  firstLevel=0,
-                  WTA_K=2,
-                  scoreType=0, # 0= HARRIS_SCORE, 1= FAST_SCORE
-                  patchSize=31,
-                  fastThreshold=20
-                  )
 sift_params = dict(nfeatures=500,
                    nOctaveLayers=3,
                    contrastThreshold=0.04,
@@ -77,16 +67,23 @@ def get_Angle(pointA, pointB):
     # 90° : "right"
     # 180° : "up"
     # 270° : "left"
+
+    # print('pointA: %s'%(pointA.dtype))
+    # print('pointB: %s'%(pointB.dtype))
+    pointA = np.float32(pointA)
+    pointB = np.float32(pointB)
+
     y = pointB[1] - pointA[1]
     x = pointB[0] - pointA[0]
+    # print('y: %s'%(y))
+    # print('x: %s'%(x))
     return degrees(atan2(y, x)) % 360
+
 
 def get_keypoints(frame, mask, detector, detector_params):
     if detector == 'good':
         kps = cv.goodFeaturesToTrack(frame, mask=mask, **detector_params)
         return kps
-    elif detector == 'orb':
-        detec = cv.ORB_create(**detector_params)
     elif detector == 'sift':
         detec = cv.xfeatures2d.SIFT_create(**detector_params)
     elif detector == 'surf':
@@ -107,13 +104,18 @@ class keypoint_tracker:
         # set start and end frame for  use
         self.end_frame = int(self.cam.get(7)) if end_frame is None else end_frame
         self.length = self.end_frame - self.start_frame
+
+
+    # use this to get measures from eye-videos like average lifespan, frames with no key points, 
+    # heatmaps, histograms and seeing the video with the tracked points (printing=True). 
+    # Also get heatmap histogram of directions (angMag=True).
     def run(self,
-            detector,
+            detector=detector,
             detector_params=detector_params,
             lk_params=lk_params,
             resize=(3/4, 3/4),
             filterType='median',
-            filterSize=(25,25),
+            filterSize=(15,15),
             printing=True,
             angMag = False):
         print(detector_params)
@@ -125,7 +127,8 @@ class keypoint_tracker:
         track_num = 0
         frame_size = (int(self.cam.get(3)*resize[0]), int(self.cam.get(4)*resize[1]))  # (width, height)
         heatmap = np.zeros(frame_size)
-
+	
+	# main loop, ends if end of video is reached or 'esc' is pressed, if a video is on the screen.
         while True:
             if self.frame_idx%1000 == 0:
                 print(self.frame_idx)
@@ -138,11 +141,14 @@ class keypoint_tracker:
             frame_gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
             vis = frame.copy()
 
+
             if not self.tracks:
                 none_idx.append(self.frame_idx)
 
             else:
                 img0, img1 = self.prev_gray, frame_gray
+                # calculate LK- optical flow forwards and backwards, and take locations, which have been found 
+		# in both directions.
 
                 p0 = np.float32([tr[-1] for tr in self.tracks]).reshape(-1, 1, 2)
                 p1, _st, _err = cv.calcOpticalFlowPyrLK(img0, img1, p0, None, **lk_params)
@@ -151,14 +157,10 @@ class keypoint_tracker:
                 d = abs(p0 - p0r)
                 d = d.reshape(-1, 2).max(-1)
                 good = d < 2
-                # good = np.logical_not(good)
-                # good = st
                 new_tracks = []
                 for tr, (x, y), good_flag in zip(self.tracks, p1.reshape(-1, 2), good):
                     if not good_flag:
                         if len(tr) > 1:
-                            # all_tracks[track_num] = None
-                            # all_tracks.iloc[self.frame_idx - len(tr): self.frame_idx, track_num] = tr
                             if angMag:
                                 all_tracks.setdefault(self.frame_idx-len(tr),[]).append(tr)
                             else:
@@ -195,7 +197,8 @@ class keypoint_tracker:
 
             ch = cv.waitKey(1)
             if ch == 27 or (self.cam.get(1) == self.end_frame):
-                # print('End of video reached.')
+		
+		# print('End of video reached.')
                 for tr in self.tracks:
                     if angMag:
                         all_tracks.setdefault(self.frame_idx-len(tr),[]).append(tr)
@@ -204,19 +207,20 @@ class keypoint_tracker:
                     track_num += 1
 
                 if angMag:
-                    lifespans = self.calc_lifespans(all_tracks, track_num)
-                    hod, angles, magnitudes = self.AngMag(tracks)
+                    lifespans, tracks = self.calc_lifespans(all_tracks, track_num)
+                    hod = self.AngMag(tracks)
                 if lifespans:
                     avg_lifespan, hist_lifespan, heatmap = self.get_results(lifespans, heatmap, show_me=printing)
                 else:
                     avg_lifespan, hist_lifespan, heatmap = None, None, None
-                print(avg_lifespan)
+                print(len(lifespans))
                 cv.destroyAllWindows()
                 self.cam.release()
                 if angMag:
                     return [avg_lifespan, hist_lifespan, heatmap, hod, none_idx]
                 else:
                     return [avg_lifespan, hist_lifespan, heatmap, none_idx]
+
 
     def calc_lifespans(self, tracks, track_num):
         if not tracks:
@@ -229,11 +233,14 @@ class keypoint_tracker:
             for key in tracks:
                 for x in range(len(tracks[key])):
                     lifespan.append(len(tracks[key][x]))
-                    np_tracks[tr_num, key : key + len(tracks[key][x])]=np.uint16(tracks[key][x])
+                    np_tracks[tr_num, key : key + len(tracks[key][x])] = np.uint16(tracks[key][x])
                     tr_num += 1
+
+            # print(np_tracks)
             return lifespan, np_tracks
 
-
+    # return the results and print some of them, if specified.
+                
     def get_results(self, lifespan, heatmap, show_me=False, none_idx=None):
             lifespan_hist = np.round(np.array(lifespan), -1)
             heatmap_norm = cv.normalize(heatmap, None, alpha=0, beta=255, norm_type=cv.NORM_MINMAX,
@@ -270,37 +277,38 @@ class keypoint_tracker:
                         continue
                     cv.imwrite('/home/laars/uni/BA/code/python/results/none_frame/%s.png' % (idx), none_frame)
             return sum(lifespan) / len(lifespan), lifespan_hist, heatmapshow
+    
+    # calculate HoD and save as .png
     def AngMag(self, tracks, return_df=True, ho_bins=8):
-        angles = np.full((tracks.shape[0], tracks.shape[1]), np.nan)
+        # tracks = np.array([[[100,0],[0,0],[10,10],[100,100]],[[0,0],[30,50],[5,10],[10,100]]])
+        # tracks = np.array([[[0,100],[0,0],[0,0],[0,0]],[[30,200],[30,50],[0,0],[0,0]]])
+        tracks = np.array([[[50, 50],[60,50],[65,55],[65,65],[60,70],[50,70],[45,65],[45, 55], [50,50]]])
+        angles = np.full((tracks.shape[0], tracks.shape[1]), 0)
         mags = np.copy(angles)
-
-        hogs = np.full((tracks.shape[0], ho_bins), np.nan)
-        for nr_row in range(tracks.shape[0] - 1):
-            for nr_col in range(tracks.shape[1]):
-                a = tracks[nr_row, nr_col]
-                b = tracks[nr_row + 1][nr_col]
-                if a is not None and b is not None:
+        # print(tracks)
+        # print(tracks.shape)
+        hogs = np.full((tracks.shape[1], ho_bins), np.nan)
+        # print(hogs.dtype)
+        # nr_row = nr of track
+        # nr_col = pos of track
+        for nr_row in range(tracks.shape[1]-1):
+            for nr_col in range(tracks.shape[0]):
+                a = tracks[nr_col, nr_row]
+                b = tracks[nr_col][nr_row+1]
+                if a.any() != 0 and b.any() != 0:
                     angle = get_Angle(a, b)
-                    angles[nr_row + 1, nr_col] = angle
+                    angles[nr_col, nr_row+1] = angle
                     mag = np.linalg.norm(np.array(a) - np.array(b))
-                    mags[nr_row + 1, nr_col] = mag
+                    mags[nr_col, nr_row+1] = mag
+            hogs[nr_row] = hog.hog(angles[:, nr_row], mags[:, nr_row], ho_bins)
 
-            ang_li = [x for x in list(angles[nr_row + 1]) if not np.isnan(x)]
-            mag_li = [x for x in list(mags[nr_row + 1]) if not np.isnan(x)]
-            hogs[nr_row + 1, :] = hog.hog(ang_li, mag_li, ho_bins)
         hogs = hogs[1:]
-        # print(np.unique(hogs[1:], return_counts=True))
+        print('hogsende: ')
         hog_norm = cv.normalize(hogs, None, alpha=0, beta=255, norm_type=cv.NORM_MINMAX,
                                     dtype=cv.CV_8U).transpose(1, 0)
         hogshow = cv.applyColorMap(hog_norm, cv.COLORMAP_SUMMER)
 
-        #cv.imwrite('directions.png',hogshow)
-            #
-            # print(ang_li,"\nmag\n")
-            # print(mag_li,"\nhogs\n")
-            # print(hogs[nr_row+1])
-
-        # print("tracks\n", tracks,"\hogs\n", np.unique(hogs[1:,:], return_counts=True),'\nang\n',angles.shape,"\nmag\n", mags.shape)
+        cv.imwrite('directions.png',hogshow)
         return hogshow
 
 def main():
@@ -320,7 +328,49 @@ def main():
     print('Done')
 
 
+def blink_detection():
+    video_path = '/home/laars/uni/BA/eyes/BlinkDataset/6_eye0.mp4'
+
+    results = [video_path, [detector]]
+    kt = keypoint_tracker(video_path, 0, 10)
+    results.extend(kt.run(angMag = True))
+
+
+    cv.destroyAllWindows()
+
+def flicker_test():
+    video_path = '/home/laars/uni/BA/code/python/results/deflicker/eye_1_midway_equal.mp4'
+    kt = keypoint_tracker(video_path, 0, 10000)
+    kt.run(printing=True, angMag = False)
+
+def flicker_test200():
+    video_path = '/home/laars/uni/BA/code/python/results/deflicker/eye0_midway_equal_200_8frames.mp4'
+    lk = dict(winSize=(31, 31),
+                     maxLevel=3,
+                     criteria=(cv.TERM_CRITERIA_EPS | cv.TERM_CRITERIA_COUNT, 10, 0.03),
+                     )
+    resize = (1,1)
+    filterT = 'None'
+    filterS = 'None'
+    surf_params = dict(hessianThreshold=100,
+                       nOctaves=1,
+                       nOctaveLayers=5
+                       )
+    kt = keypoint_tracker(video_path, 0, 10000)
+    kt.run(detector = 'surf',
+           detector_params=surf_params,
+           lk_params=lk,
+           resize=resize,
+           filterType=filterT,
+           filterSize=filterS,
+           printing=True,
+           angMag=False
+           )
+
+
+
 if __name__ == '__main__':
     print(__doc__)
     main()
-    cv.destroyAllWindows()
+    # blink_detection()
+    # flicker_test200()

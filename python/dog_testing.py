@@ -39,6 +39,8 @@ Choose from following files:
 200_eye0.mp4
 200_eye1.mp4
 
+For more info see lk_testing.py
+
 '''
 import cv2 as cv
 import numpy as np

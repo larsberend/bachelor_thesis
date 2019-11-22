@@ -1,5 +1,5 @@
 '''
-Uses midway equalization to deflicker x frames, as described here:
+Uses midway equalization to deflicker x frames of a video, as described here:
 https://hal.archives-ouvertes.fr/hal-00407796v2
 '''
 

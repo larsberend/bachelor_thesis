@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 '''
-Script to test difference of gaussian features located in tracking.py
+Script to test fast Hessian features located in tracking.py
 The following data is saved as a Dataframe in the specified location:
 
 video_path,
@@ -38,6 +38,9 @@ Choose from following files:
 9_eye1.mp4
 200_eye0.mp4
 200_eye1.mp4
+
+
+For more info see lk_testing.py
 
 '''
 import cv2 as cv

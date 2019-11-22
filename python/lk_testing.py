@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 '''
-Script to test shi-tomasi feature detector located in tracking.py
+Script to test Lucas-Kanade optical flow. Uses tracking.py
 The following data is saved as a Dataframe in the specified location:
 
 video_path,
@@ -67,6 +67,9 @@ filterType='median'
 filterSize=(21,21)
 resize = (3/4, 3/4)
 
+
+# Try to open the parameter-grid from pickle-file and get last location in it from numpy-file.
+# If it fails, create own grid and save it as .pickle
 try:
     with open(save_path + video  + '_test' + '.pickle', 'rb') as file:
         with open(save_path + 'last_stop' + video + '.npy', 'r') as stop_file:
@@ -81,7 +84,7 @@ except (EOFError, FileNotFoundError) as e:
     grid_lk = selection.ParameterGrid(dict( winSize=[(5,5), (15, 15), (31,31)],
                                             maxLevel=[0, 3, 6],
                                             criteria=[(3, 4, 0.5),
-                                                      (3, 10, 0.05),
+                                                      (3, 10, 0.03),
                                                       (3, 30, 0.03),
                                                       ],
                                             # termination criteria, epsilon AND count of iterations is used.
@@ -104,6 +107,9 @@ except (EOFError, FileNotFoundError) as e:
 
 video_path = folder + video
 print('video_path: ' + video_path)
+
+# Start feature tracker in tracking.py with the last setting from the numpy file
+# append results to .pickle file.
 
 if last_stop[-1] < len(grid_lk)-1:
     for y in range(last_stop[-1], len(grid_lk)):
@@ -146,6 +152,8 @@ if last_stop[-1] < len(grid_lk)-1:
                 pos_grid.tofile(stop_file)
 
 print('Done with grid_lk.')
+
+# When done with all parameter settings, get all results from .pickle file, build Dataframe and in same file.
 with open(save_path + video  + '_test' + '.pickle', 'rb+') as file:
     pload = pickle.load(file)
     if type(pload)==pd.core.frame.DataFrame:

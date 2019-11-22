@@ -4,6 +4,7 @@ import numpy as np
 import math
 
 
+
 def hog(
     angles: Sequence[float],
     magnitude: Sequence[float],
@@ -14,7 +15,7 @@ def hog(
 ):
     """
     Create a histogram of orientated gradients.
-
+    @author: Christopher Gundler
     >>> hog([80], [2], num_bins=9, max_angle=180)
     array([0., 0., 0., 0., 2., 0., 0., 0., 0.], dtype=float32)
     >>> hog([180], [2], num_bins=9, max_angle=180)
